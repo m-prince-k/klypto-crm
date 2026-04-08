@@ -203,6 +203,7 @@ const Dashboard = () => {
       </div>
 
       <div
+        className="responsive-grid-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
@@ -359,6 +360,7 @@ const Dashboard = () => {
       </div>
 
       <div
+        className="responsive-grid-2"
         style={{
           marginTop: "24px",
           display: "grid",

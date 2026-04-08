@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -17,8 +17,21 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const syncSidebarMode = () => {
+      if (window.innerWidth <= 1024) {
+        setIsCollapsed(false);
+      }
+    };
+
+    syncSidebarMode();
+    window.addEventListener("resize", syncSidebarMode);
+
+    return () => window.removeEventListener("resize", syncSidebarMode);
+  }, []);
 
   const menuItems = [
     { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
@@ -39,11 +52,11 @@ const Sidebar = () => {
 
   return (
     <motion.aside
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="sidebar"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`sidebar ${isMobileOpen ? "sidebar-open" : ""}`}
       onClick={() => {
-        if (isCollapsed) setIsCollapsed(false);
+        if (isCollapsed && !isMobileOpen) setIsCollapsed(false);
       }}
       style={{
         width: isCollapsed ? "84px" : "260px",
@@ -104,7 +117,10 @@ const Sidebar = () => {
             <li key={item.title} style={{ marginBottom: "4px" }}>
               <NavLink
                 to={item.path}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onMobileClose) onMobileClose();
+                }}
                 style={({ isActive }) => ({
                   display: "flex",
                   alignItems: "center",
@@ -172,7 +188,7 @@ const Sidebar = () => {
                 e.stopPropagation();
                 setIsCollapsed((prev) => !prev);
               }}
-              className="glass-card"
+              className="glass-card sidebar-desktop-toggle"
               style={{
                 width: "36px",
                 height: "36px",
@@ -196,7 +212,7 @@ const Sidebar = () => {
               e.stopPropagation();
               setIsCollapsed(false);
             }}
-            className="glass-card"
+            className="glass-card sidebar-desktop-toggle"
             style={{
               width: "36px",
               height: "36px",
