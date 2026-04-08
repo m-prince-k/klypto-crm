@@ -68,6 +68,7 @@ const HRMSOverview = () => {
   return (
     <div style={{ display: "grid", gap: "24px" }}>
       <div
+        className="responsive-grid-4"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -141,6 +142,7 @@ const HRMSOverview = () => {
       </div>
 
       <div
+        className="hrms-overview-panels"
         style={{
           display: "grid",
           gridTemplateColumns: "1.4fr 1fr",

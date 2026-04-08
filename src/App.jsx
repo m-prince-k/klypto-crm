@@ -1,22 +1,23 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Sidebar from './components/layout/Sidebar';
-import Navbar from './components/layout/Navbar';
-import Dashboard from './pages/Dashboard';
-import Leads from './pages/Leads';
-import Settings from './pages/Settings';
-import ERP from './pages/ERP';
-import RecruitmentAssessment from './components/erp/RecruitmentAssessment';
-import GrievanceManagement from './components/erp/GrievanceManagement';
-import Payroll from './components/erp/Payroll';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import HRMS from './pages/HRMS';
-import Leave from './pages/Leave';
-import './index.css';
-
-
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Sidebar from "./components/layout/Sidebar";
+import Navbar from "./components/layout/Navbar";
+import Dashboard from "./pages/Dashboard";
+import Leads from "./pages/Leads";
+import Settings from "./pages/Settings";
+import ERP from "./pages/ERP";
+import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
+import GrievanceManagement from "./components/erp/GrievanceManagement";
+import Payroll from "./components/erp/Payroll";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import HRMS from "./pages/HRMS";
+import Leave from "./pages/Leave";
+import { useState } from "react";
+import "./index.css";
 
 function App() {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   useKeyboardShortcuts([
     {
       key: "k",
@@ -39,7 +40,21 @@ function App() {
           backgroundColor: "var(--bg-dark)",
         }}
       >
-        <Sidebar />
+        {isMobileSidebarOpen && (
+          <div
+            onClick={() => setIsMobileSidebarOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
+              zIndex: 25,
+            }}
+          />
+        )}
+        <Sidebar
+          isMobileOpen={isMobileSidebarOpen}
+          onMobileClose={() => setIsMobileSidebarOpen(false)}
+        />
         <div
           className="main-content"
           style={{
@@ -49,7 +64,7 @@ function App() {
             overflow: "hidden",
           }}
         >
-          <Navbar />
+          <Navbar onMenuClick={() => setIsMobileSidebarOpen((prev) => !prev)} />
           <main
             style={{
               padding: "24px",

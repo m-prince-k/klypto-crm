@@ -10,7 +10,8 @@
   --glass: rgba(255, 255, 255, 0.03);
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --radius: 12px;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   --avatar-bg: #334155;
   --card-hover: rgba(30, 41, 59, 0.4);
@@ -20,7 +21,7 @@
   --icon-bg: rgba(14, 165, 233, 0.1);
 }
 
-[data-theme='light'] {
+[data-theme="light"] {
   --primary: #0ea5e9;
   --primary-hover: #0284c7;
   --bg-dark: #f1f5f9;
@@ -87,6 +88,905 @@ button {
 .btn-primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
+}
+
+.app-container {
+  min-width: 0;
+}
+
+.main-content {
+  min-width: 0;
+}
+
+.sidebar {
+  min-width: 0;
+}
+
+.erp-container {
+  min-width: 0;
+}
+
+.responsive-grid-4,
+.responsive-grid-3,
+.responsive-grid-2 {
+  display: grid;
+  gap: 20px;
+}
+
+.responsive-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.responsive-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.responsive-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.responsive-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.app-navbar {
+  min-width: 0;
+}
+
+.navbar-search {
+  min-width: 0;
+}
+
+.navbar-actions {
+  min-width: 0;
+}
+
+.module-header {
+  min-width: 0;
+}
+
+.recruitment-assessment {
+  min-width: 0;
+}
+
+.module-subnav,
+.recruitment-subnav {
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.module-subnav::-webkit-scrollbar,
+.recruitment-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.module-subnav.is-dragging,
+.recruitment-subnav.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.module-subnav-item,
+.recruitment-subnav-item {
+  flex-shrink: 0;
+}
+
+.recruitment-interviews-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.recruitment-schedule-card {
+  min-width: 0;
+}
+
+.recruitment-scorecards,
+.recruitment-offers-grid,
+.recruitment-offer-panel,
+.recruitment-onboarding-panel,
+.recruitment-portal-preview {
+  min-width: 0;
+}
+
+.recruitment-offer-row,
+.recruitment-onboarding-row {
+  min-width: 0;
+}
+
+.grievance-subnav {
+  min-width: 0;
+}
+
+.grievance-dashboard,
+.grievance-submit-card,
+.grievance-sla-card,
+.grievance-audit-card {
+  min-width: 0;
+}
+
+.grievance-list-item,
+.grievance-sla-item,
+.grievance-audit-row {
+  min-width: 0;
+}
+
+.grievance-audit-content {
+  min-width: 0;
+}
+
+.grievance-anonymous-toggle {
+  min-width: 0;
+}
+
+.leave-module,
+.leave-subnav,
+.leave-overview-stats,
+.leave-overview-main,
+.leave-calendar-panels,
+.leave-calendar-grid,
+.leave-data-row,
+.hrms-overview-panels,
+.hrms-attendance-row {
+  min-width: 0;
+}
+
+.erp-tab-header,
+.erp-org-setup,
+.erp-entity-grid,
+.erp-partner-master,
+.erp-finance-switch,
+.erp-analytics-main {
+  min-width: 0;
+}
+
+.erp-partner-actions,
+.erp-approval-item,
+.erp-finance-row,
+.erp-finance-meta,
+.erp-entity-item,
+.erp-entity-meta {
+  min-width: 0;
+}
+
+.erp-analytics-main {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.payroll-subnav,
+.payroll-summary,
+.payroll-summary-panels,
+.payroll-compliance,
+.payroll-reports {
+  min-width: 0;
+}
+
+.payroll-structure-panel,
+.payroll-payslip-panel,
+.payroll-compliance-card,
+.payroll-report-row {
+  min-width: 0;
+}
+
+.payroll-summary-panels {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+
+@media (max-width: 768px) {
+  .module-subnav,
+  .recruitment-subnav {
+    padding: 4px 6px !important;
+    border-radius: 12px !important;
+    gap: 6px !important;
+  }
+
+  .module-subnav-item,
+  .recruitment-subnav-item {
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .grievance-subnav {
+    padding: 6px !important;
+  }
+
+  .grievance-subnav > div {
+    width: 100%;
+  }
+
+  .grievance-subnav button {
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .grievance-dashboard {
+    gap: 18px !important;
+  }
+
+  .grievance-list-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .grievance-list-meta {
+    width: 100%;
+    min-width: 0;
+    text-align: left !important;
+  }
+
+  .grievance-anonymous-toggle {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .grievance-anonymous-toggle button {
+    align-self: flex-end;
+  }
+
+  .grievance-submit-two-col {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .grievance-sla-card {
+    padding: 18px !important;
+  }
+
+  .grievance-sla-item {
+    padding: 16px !important;
+  }
+
+  .grievance-audit-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .grievance-audit-row > div:first-child {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .payroll-subnav {
+    padding: 6px !important;
+  }
+
+  .payroll-summary-panels {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .payroll-structure-panel,
+  .payroll-payslip-panel,
+  .payroll-compliance,
+  .payroll-reports {
+    padding: 18px !important;
+  }
+
+  .payroll-structure-card,
+  .payroll-compliance-card,
+  .payroll-report-row {
+    padding: 16px !important;
+  }
+
+  .payroll-payslip-row,
+  .payroll-report-row {
+    flex-wrap: wrap;
+    gap: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  .payroll-report-meta {
+    text-align: left !important;
+    width: 100%;
+  }
+
+  .payroll-reports-header {
+    align-items: flex-start !important;
+  }
+
+  .payroll-reports-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .payroll-compliance-reminder {
+    margin-top: 20px !important;
+    padding: 18px !important;
+  }
+
+  .leave-subnav {
+    padding: 6px !important;
+  }
+
+  .leave-overview-main,
+  .leave-calendar-panels,
+  .hrms-overview-panels {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .leave-data-row,
+  .hrms-attendance-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+
+  .leave-data-row > div:last-child,
+  .hrms-attendance-row > div:last-child {
+    text-align: left !important;
+  }
+
+  .leave-calendar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .leave-calendar-grid > div {
+    height: 52px !important;
+  }
+
+  .erp-tab-header {
+    align-items: flex-start !important;
+  }
+
+  .erp-org-fields,
+  .erp-org-bottom,
+  .erp-entity-grid,
+  .erp-finance-switch,
+  .erp-analytics-main {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .erp-partner-master {
+    padding: 18px !important;
+  }
+
+  .erp-partner-toolbar {
+    align-items: stretch !important;
+  }
+
+  .erp-partner-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .erp-partner-actions > div {
+    flex: 1 1 100%;
+  }
+
+  .erp-partner-search {
+    width: 100% !important;
+  }
+
+  .erp-entity-item,
+  .erp-finance-row {
+    flex-wrap: wrap;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .erp-entity-meta,
+  .erp-finance-meta {
+    text-align: left !important;
+    width: 100%;
+  }
+
+  .erp-approval-header,
+  .erp-approval-top,
+  .erp-approval-actions {
+    align-items: flex-start !important;
+  }
+
+  .erp-approval-action-buttons {
+    width: 100%;
+  }
+
+  .erp-approval-action-buttons button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .erp-analytics-header > div {
+    width: 100%;
+  }
+
+  .erp-analytics-header button {
+    flex: 1;
+  }
+
+  .recruitment-interviews-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .recruitment-schedule-panel,
+  .recruitment-scheduler-panel,
+  .recruitment-scorecards,
+  .recruitment-offer-panel,
+  .recruitment-onboarding-panel {
+    padding: 18px !important;
+  }
+
+  .recruitment-schedule-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .recruitment-schedule-card > div {
+    width: 100% !important;
+  }
+
+  .recruitment-schedule-card > div:last-child {
+    text-align: left !important;
+  }
+
+  .recruitment-scheduler-panel button.btn-primary {
+    width: 100%;
+  }
+
+  .recruitment-scorecard {
+    padding: 16px !important;
+  }
+
+  .recruitment-scorecard-header {
+    align-items: flex-start !important;
+  }
+
+  .recruitment-scorecard-header > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .recruitment-offers-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .recruitment-offer-row,
+  .recruitment-onboarding-row {
+    align-items: flex-start !important;
+  }
+
+  .recruitment-offer-row > div:last-child,
+  .recruitment-onboarding-row > div:last-child {
+    text-align: left !important;
+  }
+
+  .recruitment-portal-preview {
+    padding: 20px !important;
+  }
+
+  .recruitment-portal-preview > div {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .module-subnav,
+  .recruitment-subnav {
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  .module-subnav-item,
+  .recruitment-subnav-item {
+    padding: 10px 12px !important;
+  }
+
+  .recruitment-schedule-card {
+    padding: 14px !important;
+  }
+
+  .recruitment-schedule-card > div:first-child {
+    min-width: 0 !important;
+    font-size: 13px !important;
+  }
+
+  .recruitment-scorecards h3,
+  .recruitment-offer-panel h3,
+  .recruitment-onboarding-panel h3 {
+    font-size: 16px !important;
+  }
+
+  .recruitment-portal-preview h2 {
+    font-size: 20px !important;
+  }
+
+  .recruitment-portal-preview {
+    padding: 16px !important;
+  }
+
+  .recruitment-portal-preview [style*="border: 1px solid var(--primary)"] {
+    padding: 16px !important;
+  }
+
+  .grievance-subnav {
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  .grievance-subnav button {
+    padding: 10px 12px !important;
+  }
+
+  .grievance-dashboard > .responsive-grid-4 {
+    gap: 14px !important;
+  }
+
+  .grievance-list-item {
+    padding: 14px !important;
+  }
+
+  .grievance-list-item > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .grievance-submit-card {
+    padding: 20px !important;
+  }
+
+  .grievance-submit-card h2 {
+    font-size: 20px !important;
+  }
+
+  .grievance-submit-card p {
+    font-size: 12px !important;
+  }
+
+  .grievance-sla-item > div:first-child,
+  .grievance-sla-item > div:last-child {
+    width: 100%;
+  }
+
+  .grievance-audit-card {
+    padding: 18px !important;
+  }
+
+  .grievance-audit-row {
+    padding: 14px 0 !important;
+  }
+
+  .payroll-subnav {
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  .payroll-summary > .responsive-grid-4,
+  .payroll-compliance > .responsive-grid-3 {
+    gap: 14px !important;
+  }
+
+  .payroll-summary .glass-card,
+  .payroll-compliance,
+  .payroll-reports {
+    border-radius: 10px !important;
+  }
+
+  .payroll-reports-actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .payroll-report-row > div:first-child {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .leave-subnav {
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  .leave-module .glass-card,
+  .hrms-overview-panels .glass-card {
+    border-radius: 10px !important;
+  }
+
+  .leave-calendar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .leave-calendar-grid > div {
+    height: 48px !important;
+    font-size: 12px !important;
+  }
+
+  .erp-partner-tabs {
+    width: 100%;
+  }
+
+  .erp-partner-tabs button {
+    flex: 1;
+  }
+
+  .erp-approval-item,
+  .erp-partner-master .glass-card {
+    border-radius: 10px !important;
+  }
+}
+
+.assessment-card-main {
+  min-width: 0;
+}
+
+.assessment-card-actions {
+  min-width: 84px;
+}
+
+@media (max-width: 1200px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .responsive-grid-4,
+  .responsive-grid-3,
+  .responsive-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .app-navbar {
+    height: auto !important;
+    min-height: 64px;
+    padding: 12px 16px !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .navbar-search {
+    order: 3;
+    flex: 1 1 100% !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .navbar-actions {
+    order: 2;
+    width: auto !important;
+    margin-left: auto;
+    gap: 8px !important;
+  }
+
+  .mobile-menu-btn {
+    order: 1;
+  }
+
+  .create-new-btn,
+  .navbar-divider,
+  .search-shortcut {
+    display: none !important;
+  }
+
+  .navbar-search input {
+    padding-right: 12px !important;
+    font-size: 13px !important;
+  }
+
+  .app-container {
+    flex-direction: column;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: min(84vw, 300px) !important;
+    max-width: 300px;
+    height: calc(100vh - 64px) !important;
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    z-index: 30 !important;
+    transform: translateX(-100%);
+    transition:
+      transform 0.25s ease,
+      width 0.25s ease !important;
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    border-radius: 0 12px 12px 0;
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    overflow: visible !important;
+  }
+
+  .main-content main {
+    padding: 16px !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+
+  .sidebar-desktop-toggle {
+    display: none !important;
+  }
+
+  .sidebar .logo {
+    margin-bottom: 16px !important;
+  }
+
+  .sidebar nav {
+    padding-bottom: 12px;
+  }
+
+  .sidebar {
+    overflow-y: auto;
+  }
+
+  .responsive-grid-4,
+  .responsive-grid-3,
+  .responsive-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .responsive-stack {
+    flex-direction: column;
+  }
+
+  .module-header {
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .module-header h1,
+  .module-header h2 {
+    font-size: 24px !important;
+    line-height: 1.1;
+  }
+
+  .module-header p {
+    font-size: 13px !important;
+    line-height: 1.45;
+  }
+
+  .module-header .glass-card {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0;
+  }
+
+  .assessment-header {
+    align-items: flex-start !important;
+  }
+
+  .assessment-create-btn {
+    width: 100%;
+  }
+
+  .assessment-card {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .assessment-card-main {
+    width: 100%;
+  }
+
+  .assessment-card-main > div:last-child {
+    width: 100%;
+  }
+
+  .assessment-card-main > div:last-child > div {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .assessment-card-actions {
+    width: 100%;
+    text-align: left !important;
+    min-width: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .assessment-results-btn {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-navbar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .glass-card {
+    border-radius: 10px;
+  }
+
+  .main-content main {
+    padding: 12px !important;
+  }
+
+  .responsive-grid-4,
+  .responsive-grid-3,
+  .responsive-grid-2 {
+    gap: 14px;
+  }
+
+  .mobile-menu-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .module-header h1,
+  .module-header h2 {
+    font-size: 22px !important;
+  }
+
+  .module-header p {
+    font-size: 12px !important;
+  }
+
+  .module-header {
+    gap: 10px !important;
+  }
+
+  .assessment-header h3 {
+    font-size: 16px !important;
+  }
+
+  .assessment-header p {
+    font-size: 12px !important;
+  }
+
+  .assessment-card {
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+
+  .assessment-card-main {
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .assessment-card-main > div:last-child > div {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .assessment-card-actions {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .assessment-results-btn {
+    padding: 0;
+  }
 }
 
 /* Custom Scrollbar */

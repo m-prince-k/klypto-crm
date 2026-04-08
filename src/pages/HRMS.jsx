@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -58,6 +58,8 @@ const TabContent = ({ title, children, showAdd = true }) => (
 const HRMS = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const tabNavRef = useRef(null);
+  const dragStateRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 
   const tabs = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={18} /> },
@@ -69,6 +71,43 @@ const HRMS = () => {
     { id: "performance", label: "Performance", icon: <Award size={18} /> },
     { id: "selfservice", label: "Portal", icon: <Laptop2 size={18} /> },
   ];
+
+  useEffect(() => {
+    const activeButton = tabNavRef.current?.querySelector(
+      `[data-tab="${activeTab}"]`,
+    );
+
+    activeButton?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeTab]);
+
+  const handleTabDragStart = (event) => {
+    if (!tabNavRef.current) return;
+
+    dragStateRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      scrollLeft: tabNavRef.current.scrollLeft,
+    };
+
+    tabNavRef.current.classList.add("is-dragging");
+  };
+
+  const handleTabDragMove = (event) => {
+    if (!dragStateRef.current.isDragging || !tabNavRef.current) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - dragStateRef.current.startX;
+    tabNavRef.current.scrollLeft = dragStateRef.current.scrollLeft - deltaX;
+  };
+
+  const handleTabDragEnd = () => {
+    dragStateRef.current.isDragging = false;
+    tabNavRef.current?.classList.remove("is-dragging");
+  };
 
   return (
     <div
@@ -84,6 +123,7 @@ const HRMS = () => {
       }}
     >
       <header
+        className="module-header"
         style={{
           display: "flex",
           alignItems: "center",
@@ -118,7 +158,13 @@ const HRMS = () => {
       </header>
 
       <div
-        className="glass-card"
+        ref={tabNavRef}
+        className="glass-card module-subnav"
+        onPointerDown={handleTabDragStart}
+        onPointerMove={handleTabDragMove}
+        onPointerUp={handleTabDragEnd}
+        onPointerLeave={handleTabDragEnd}
+        onPointerCancel={handleTabDragEnd}
         style={{
           display: "flex",
           gap: "4px",
@@ -131,11 +177,18 @@ const HRMS = () => {
           overflowX: "auto",
           overflowY: "hidden",
           width: "100%",
+          scrollBehavior: "smooth",
+          touchAction: "pan-x",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          cursor: "grab",
         }}
       >
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            data-tab={tab.id}
+            className="module-subnav-item"
             onClick={() => setActiveTab(tab.id)}
             style={{
               display: "flex",
@@ -149,8 +202,9 @@ const HRMS = () => {
               color: activeTab === tab.id ? "white" : "var(--text-muted)",
               backgroundColor:
                 activeTab === tab.id ? "var(--primary)" : "transparent",
-              flexShrink: 0,
+              flex: "0 0 auto",
               whiteSpace: "nowrap",
+              scrollSnapAlign: "center",
             }}
           >
             {tab.icon}

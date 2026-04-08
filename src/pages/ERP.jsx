@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import OrgSetup from "../components/erp/OrgSetup";
@@ -37,11 +37,14 @@ const TabContent = ({ title, children, showAdd = true }) => (
     className="erp-tab-content"
   >
     <div
+      className="erp-tab-header"
       style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: "24px",
+        gap: "16px",
+        flexWrap: "wrap",
       }}
     >
       <h2 style={{ fontSize: "24px", fontWeight: "700" }}>{title}</h2>
@@ -61,6 +64,8 @@ const TabContent = ({ title, children, showAdd = true }) => (
 const ERP = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const navigate = useNavigate();
+  const tabNavRef = useRef(null);
+  const dragStateRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 
   const tabs = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={18} /> },
@@ -76,6 +81,43 @@ const ERP = () => {
     { id: "approvals", label: "Approvals", icon: <CheckCircle2 size={18} /> },
   ];
 
+  useEffect(() => {
+    const activeButton = tabNavRef.current?.querySelector(
+      `[data-tab="${activeTab}"]`,
+    );
+
+    activeButton?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeTab]);
+
+  const handleTabDragStart = (event) => {
+    if (!tabNavRef.current) return;
+
+    dragStateRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      scrollLeft: tabNavRef.current.scrollLeft,
+    };
+
+    tabNavRef.current.classList.add("is-dragging");
+  };
+
+  const handleTabDragMove = (event) => {
+    if (!dragStateRef.current.isDragging || !tabNavRef.current) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - dragStateRef.current.startX;
+    tabNavRef.current.scrollLeft = dragStateRef.current.scrollLeft - deltaX;
+  };
+
+  const handleTabDragEnd = () => {
+    dragStateRef.current.isDragging = false;
+    tabNavRef.current?.classList.remove("is-dragging");
+  };
+
   return (
     <div
       className="erp-container"
@@ -89,11 +131,21 @@ const ERP = () => {
         gap: "24px",
       }}
     >
-      <header style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <button 
-          onClick={() => navigate(-1)} 
-          className="glass-card" 
-          style={{ width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}
+      <header
+        className="module-header"
+        style={{ display: "flex", alignItems: "center", gap: "16px" }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="glass-card"
+          style={{
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--text-muted)",
+          }}
         >
           <ArrowLeft size={20} />
         </button>
@@ -111,7 +163,13 @@ const ERP = () => {
 
       {/* Tab Navigation */}
       <div
-        className="glass-card"
+        ref={tabNavRef}
+        className="glass-card module-subnav"
+        onPointerDown={handleTabDragStart}
+        onPointerMove={handleTabDragMove}
+        onPointerUp={handleTabDragEnd}
+        onPointerLeave={handleTabDragEnd}
+        onPointerCancel={handleTabDragEnd}
         style={{
           display: "flex",
           gap: "4px",
@@ -124,11 +182,18 @@ const ERP = () => {
           overflowX: "auto",
           overflowY: "hidden",
           width: "100%",
+          scrollBehavior: "smooth",
+          touchAction: "pan-x",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          cursor: "grab",
         }}
       >
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            data-tab={tab.id}
+            className="module-subnav-item"
             onClick={() => setActiveTab(tab.id)}
             style={{
               display: "flex",
@@ -142,8 +207,9 @@ const ERP = () => {
               color: activeTab === tab.id ? "white" : "var(--text-muted)",
               backgroundColor:
                 activeTab === tab.id ? "var(--primary)" : "transparent",
-              flexShrink: 0,
+              flex: "0 0 auto",
               whiteSpace: "nowrap",
+              scrollSnapAlign: "center",
             }}
           >
             {tab.icon}

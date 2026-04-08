@@ -115,6 +115,7 @@ const Attendance = () => {
           {rows.map((row) => (
             <div
               key={row.name}
+              className="hrms-attendance-row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "2fr 1fr 1fr 0.8fr",
