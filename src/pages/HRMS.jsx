@@ -1,25 +1,25 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Building2,
-  Users2,
-  PackageSearch,
-  Receipt,
   BarChart3,
-  ClipboardList,
-  CheckCircle2,
-  Box,
+  Users2,
+  GitBranch,
+  Clock3,
+  CalendarCheck2,
+  Wallet2,
+  Award,
+  Laptop2,
   Plus,
 } from "lucide-react";
 
-import OrgSetup from "../components/erp/OrgSetup";
-import EntityManagement from "../components/erp/EntityManagement";
-import PartnerMaster from "../components/erp/PartnerMaster";
-import FinancialWorkflows from "../components/erp/FinancialWorkflows";
-import AssetTracker from "../components/erp/AssetTracker";
-import ProjectKanban from "../components/erp/ProjectKanban";
-import ApprovalQueue from "../components/erp/ApprovalQueue";
-import ERPAnalytics from "../components/erp/ERPAnalytics";
+import HRMSOverview from "../components/hrms/HRMSOverview";
+import EmployeeMaster from "../components/hrms/EmployeeMaster";
+import OrgStructure from "../components/hrms/OrgStructure";
+import Attendance from "../components/hrms/Attendance";
+import LeaveManagement from "../components/hrms/LeaveManagement";
+import PayrollStructure from "../components/hrms/PayrollStructure";
+import PerformanceReviews from "../components/hrms/PerformanceReviews";
+import EmployeeSelfService from "../components/hrms/EmployeeSelfService";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -35,13 +35,15 @@ const TabContent = ({ title, children, showAdd = true }) => (
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: "24px",
+        gap: "16px",
+        flexWrap: "wrap",
       }}
     >
       <h2 style={{ fontSize: "24px", fontWeight: "700" }}>{title}</h2>
       {showAdd && (
         <button
           className="btn-primary"
-          style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
         >
           <Plus size={18} /> Add New
         </button>
@@ -51,18 +53,18 @@ const TabContent = ({ title, children, showAdd = true }) => (
   </motion.div>
 );
 
-const ERP = () => {
+const HRMS = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={18} /> },
-    { id: "org", label: "Organization", icon: <Building2 size={18} /> },
-    { id: "entities", label: "Entities", icon: <Box size={18} /> },
-    { id: "partners", label: "Partners", icon: <Users2 size={18} /> },
-    { id: "assets", label: "Assets", icon: <PackageSearch size={18} /> },
-    { id: "transactions", label: "Transactions", icon: <Receipt size={18} /> },
-    { id: "projects", label: "Projects", icon: <ClipboardList size={18} /> },
-    { id: "approvals", label: "Approvals", icon: <CheckCircle2 size={18} /> },
+    { id: "employees", label: "Employees", icon: <Users2 size={18} /> },
+    { id: "structure", label: "Structure", icon: <GitBranch size={18} /> },
+    { id: "attendance", label: "Attendance", icon: <Clock3 size={18} /> },
+    { id: "leave", label: "Leave", icon: <CalendarCheck2 size={18} /> },
+    { id: "payroll", label: "Payroll", icon: <Wallet2 size={18} /> },
+    { id: "performance", label: "Performance", icon: <Award size={18} /> },
+    { id: "selfservice", label: "Portal", icon: <Laptop2 size={18} /> },
   ];
 
   return (
@@ -82,14 +84,14 @@ const ERP = () => {
         <h1
           style={{ fontSize: "32px", fontWeight: "800", marginBottom: "8px" }}
         >
-          ERP Portal
+          HRMS Portal
         </h1>
         <p style={{ color: "var(--text-muted)" }}>
-          Manage your organization's core operations and resources.
+          Manage people operations, attendance, leave, payroll, and employee
+          self-service.
         </p>
       </header>
 
-      {/* Tab Navigation */}
       <div
         className="glass-card"
         style={{
@@ -137,56 +139,68 @@ const ERP = () => {
           {activeTab === "overview" && (
             <TabContent
               key="overview"
-              title="Business Overview"
+              title="People Operations Overview"
               showAdd={false}
             >
-              <ERPAnalytics />
+              <HRMSOverview />
             </TabContent>
           )}
 
-          {activeTab === "org" && (
-            <TabContent key="org" title="Organization Setup">
-              <OrgSetup />
+          {activeTab === "employees" && (
+            <TabContent key="employees" title="Employee Master">
+              <EmployeeMaster />
             </TabContent>
           )}
 
-          {activeTab === "entities" && (
-            <TabContent key="entities" title="Branches & Departments">
-              <EntityManagement />
-            </TabContent>
-          )}
-
-          {activeTab === "partners" && (
-            <TabContent key="partners" title="Vendors & Customers">
-              <PartnerMaster />
-            </TabContent>
-          )}
-
-          {activeTab === "assets" && (
-            <TabContent key="assets" title="Asset Management">
-              <AssetTracker />
-            </TabContent>
-          )}
-
-          {activeTab === "transactions" && (
-            <TabContent key="transactions" title="Transactions Workflow">
-              <FinancialWorkflows />
-            </TabContent>
-          )}
-
-          {activeTab === "projects" && (
-            <TabContent key="projects" title="Project Tracking">
-              <ProjectKanban />
-            </TabContent>
-          )}
-
-          {activeTab === "approvals" && (
+          {activeTab === "structure" && (
             <TabContent
-              key="approvals"
-              title="Workflow Approvals"
+              key="structure"
+              title="Organization Structure"
               showAdd={false}
             >
-              <ApprovalQueue />
+              <OrgStructure />
+            </TabContent>
+          )}
+
+          {activeTab === "attendance" && (
+            <TabContent
+              key="attendance"
+              title="Attendance Tracking"
+              showAdd={false}
+            >
+              <Attendance />
+            </TabContent>
+          )}
+
+          {activeTab === "leave" && (
+            <TabContent key="leave" title="Leave Management" showAdd={false}>
+              <LeaveManagement />
+            </TabContent>
+          )}
+
+          {activeTab === "payroll" && (
+            <TabContent key="payroll" title="Payroll Structure" showAdd={false}>
+              <PayrollStructure />
+            </TabContent>
+          )}
+
+          {activeTab === "performance" && (
+            <TabContent
+              key="performance"
+              title="Performance Reviews"
+              showAdd={false}
+            >
+              <PerformanceReviews />
+            </TabContent>
+          )}
+
+          {activeTab === "selfservice" && (
+            <TabContent
+              key="selfservice"
+              title="Employee Self-Service"
+              showAdd={false}
+            >
+              <EmployeeSelfService />
             </TabContent>
           )}
         </AnimatePresence>
@@ -195,4 +209,4 @@ const ERP = () => {
   );
 };
 
-export default ERP;
+export default HRMS;
