@@ -10,6 +10,8 @@ import RecruitmentAssessment from './components/erp/RecruitmentAssessment';
 import GrievanceManagement from './components/erp/GrievanceManagement';
 import Payroll from './components/erp/Payroll';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import HRMS from './pages/HRMS';
+import Leave from './pages/Leave';
 import './index.css';
 
 
@@ -17,30 +19,55 @@ import './index.css';
 function App() {
   useKeyboardShortcuts([
     {
-      key: 'k',
+      key: "k",
       ctrlKey: true,
       action: () => {
         const searchInput = document.querySelector('input[type="text"]');
         if (searchInput) searchInput.focus();
-      }
-    }
+      },
+    },
   ]);
 
   return (
-
     <Router>
-      <div className="app-container" style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-dark)' }}>
+      <div
+        className="app-container"
+        style={{
+          display: "flex",
+          height: "100vh",
+          overflow: "hidden",
+          backgroundColor: "var(--bg-dark)",
+        }}
+      >
         <Sidebar />
-        <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div
+          className="main-content"
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
           <Navbar />
-          <main style={{ padding: '24px', overflowY: 'auto', overflowX: 'hidden', flex: 1 }}>
+          <main
+            style={{
+              padding: "24px",
+              overflowY: "auto",
+              overflowX: "hidden",
+              flex: 1,
+            }}
+          >
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/leads" element={<Leads />} />
+              <Route path="/pipeline" element={<Leads />} />
               <Route path="/erp" element={<ERP />} />
               <Route path="/recruitment" element={<RecruitmentAssessment />} />
               <Route path="/grievances" element={<GrievanceManagement />} />
               <Route path="/payroll" element={<Payroll />} />
+              <Route path="/hrms" element={<HRMS />} />
+              <Route path="/leave" element={<Leave />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>

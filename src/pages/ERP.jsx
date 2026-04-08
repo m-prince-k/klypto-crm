@@ -80,6 +80,9 @@ const ERP = () => {
     <div
       className="erp-container"
       style={{
+        width: "100%",
+        maxWidth: "1400px",
+        margin: "0 auto",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -113,9 +116,14 @@ const ERP = () => {
           display: "flex",
           gap: "4px",
           alignContent: "center",
-          flexWrap: "wrap",
+          flexWrap: "nowrap",
           justifyContent: "flex-start",
           alignItems: "stretch",
+          minHeight: "52px",
+          padding: "6px",
+          overflowX: "auto",
+          overflowY: "hidden",
+          width: "100%",
         }}
       >
         {tabs.map((tab) => (
