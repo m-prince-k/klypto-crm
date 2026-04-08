@@ -83,38 +83,28 @@ const Leave = () => {
         }}
       >
         <button
-          onClick={() => navigate("/erp")}
+          onClick={() => navigate(-1)}
+          className="glass-card"
           style={{
             width: "40px",
             height: "40px",
-            borderRadius: "50%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            cursor: "pointer",
-            border: "1px solid var(--border)",
-            backgroundColor: "var(--glass)",
-            color: "var(--text-main)",
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--border)";
-            e.currentTarget.style.transform = "translateX(-2px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--glass)";
-            e.currentTarget.style.transform = "translateX(0)";
+            color: "var(--text-muted)",
           }}
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}>
+          <h1
+            style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}
+          >
             Leave Management
           </h1>
           <p style={{ color: "var(--text-muted)" }}>
-            Manage leave balances, policy workflows, approvals, and carry-forward
-            rules.
+            Manage leave balances, policy workflows, approvals, and
+            carry-forward rules.
           </p>
         </div>
       </header>
