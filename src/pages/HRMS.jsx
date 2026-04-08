@@ -10,7 +10,9 @@ import {
   Award,
   Laptop2,
   Plus,
+  ArrowLeft,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import HRMSOverview from "../components/hrms/HRMSOverview";
 import EmployeeMaster from "../components/hrms/EmployeeMaster";
@@ -54,6 +56,7 @@ const TabContent = ({ title, children, showAdd = true }) => (
 );
 
 const HRMS = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -80,16 +83,48 @@ const HRMS = () => {
         gap: "24px",
       }}
     >
-      <header>
-        <h1
-          style={{ fontSize: "32px", fontWeight: "800", marginBottom: "8px" }}
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+        }}
+      >
+        <button
+          onClick={() => navigate("/erp")}
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--glass)",
+            color: "var(--text-main)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--border)";
+            e.currentTarget.style.transform = "translateX(-2px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--glass)";
+            e.currentTarget.style.transform = "translateX(0)";
+          }}
         >
-          HRMS Portal
-        </h1>
-        <p style={{ color: "var(--text-muted)" }}>
-          Manage people operations, attendance, leave, payroll, and employee
-          self-service.
-        </p>
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}>
+            HRMS Portal
+          </h1>
+          <p style={{ color: "var(--text-muted)" }}>
+            Manage people operations, attendance, leave, payroll, and employee
+            self-service.
+          </p>
+        </div>
       </header>
 
       <div

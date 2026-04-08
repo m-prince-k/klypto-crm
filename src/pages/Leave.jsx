@@ -12,7 +12,9 @@ import {
   TrendingUp,
   Clock3,
   AlertTriangle,
+  ArrowLeft,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -47,6 +49,7 @@ const TabContent = ({ title, children, showAdd = true }) => (
 );
 
 const Leave = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
@@ -72,16 +75,48 @@ const Leave = () => {
         gap: "24px",
       }}
     >
-      <header>
-        <h1
-          style={{ fontSize: "32px", fontWeight: "800", marginBottom: "8px" }}
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+        }}
+      >
+        <button
+          onClick={() => navigate("/erp")}
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--glass)",
+            color: "var(--text-main)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--border)";
+            e.currentTarget.style.transform = "translateX(-2px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--glass)";
+            e.currentTarget.style.transform = "translateX(0)";
+          }}
         >
-          Leave Management
-        </h1>
-        <p style={{ color: "var(--text-muted)" }}>
-          Manage leave balances, policy workflows, approvals, and carry-forward
-          rules.
-        </p>
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}>
+            Leave Management
+          </h1>
+          <p style={{ color: "var(--text-muted)" }}>
+            Manage leave balances, policy workflows, approvals, and carry-forward
+            rules.
+          </p>
+        </div>
       </header>
 
       <div
