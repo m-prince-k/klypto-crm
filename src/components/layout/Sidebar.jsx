@@ -8,7 +8,8 @@ import {
   ChevronRight,
   LogOut,
   Command,
-  Package
+  Package,
+  ShieldAlert
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -17,6 +18,8 @@ const Sidebar = () => {
     { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
     { title: 'Leads', icon: <Users size={20} />, path: '/leads' },
     { title: 'Pipeline', icon: <Briefcase size={20} />, path: '/pipeline' },
+    { title: 'Recruitment', icon: <Users size={20} />, path: '/recruitment' },
+    { title: 'Grievances', icon: <ShieldAlert size={20} />, path: '/grievances' },
     { title: 'ERP Portal', icon: <Package size={20} />, path: '/erp' },
     { title: 'Settings', icon: <Settings size={20} />, path: '/settings' },
   ];

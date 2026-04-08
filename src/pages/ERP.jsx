@@ -1,5 +1,15 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import OrgSetup from "../components/erp/OrgSetup";
+import EntityManagement from "../components/erp/EntityManagement";
+import PartnerMaster from "../components/erp/PartnerMaster";
+import FinancialWorkflows from "../components/erp/FinancialWorkflows";
+import AssetTracker from "../components/erp/AssetTracker";
+import ProjectKanban from "../components/erp/ProjectKanban";
+import ApprovalQueue from "../components/erp/ApprovalQueue";
+import ERPAnalytics from "../components/erp/ERPAnalytics";
+import RecruitmentAssessment from "../components/erp/RecruitmentAssessment";
+import GrievanceManagement from "../components/erp/GrievanceManagement";
 import {
   Building2,
   Users2,
@@ -10,16 +20,9 @@ import {
   CheckCircle2,
   Box,
   Plus,
+  Users,
+  ShieldAlert,
 } from "lucide-react";
-
-import OrgSetup from "../components/erp/OrgSetup";
-import EntityManagement from "../components/erp/EntityManagement";
-import PartnerMaster from "../components/erp/PartnerMaster";
-import FinancialWorkflows from "../components/erp/FinancialWorkflows";
-import AssetTracker from "../components/erp/AssetTracker";
-import ProjectKanban from "../components/erp/ProjectKanban";
-import ApprovalQueue from "../components/erp/ApprovalQueue";
-import ERPAnalytics from "../components/erp/ERPAnalytics";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -62,6 +65,8 @@ const ERP = () => {
     { id: "assets", label: "Assets", icon: <PackageSearch size={18} /> },
     { id: "transactions", label: "Transactions", icon: <Receipt size={18} /> },
     { id: "projects", label: "Projects", icon: <ClipboardList size={18} /> },
+    { id: "recruitment", label: "Recruitment", icon: <Users size={18} /> },
+    { id: "grievances", label: "Grievances", icon: <ShieldAlert size={18} /> },
     { id: "approvals", label: "Approvals", icon: <CheckCircle2 size={18} /> },
   ];
 
@@ -169,6 +174,18 @@ const ERP = () => {
           {activeTab === "projects" && (
             <TabContent key="projects" title="Project Tracking">
               <ProjectKanban />
+            </TabContent>
+          )}
+
+          {activeTab === "recruitment" && (
+            <TabContent key="recruitment" title="Recruitment & Assessment">
+              <RecruitmentAssessment />
+            </TabContent>
+          )}
+
+          {activeTab === "grievances" && (
+            <TabContent key="grievances" title="Grievance Management">
+              <GrievanceManagement />
             </TabContent>
           )}
 
