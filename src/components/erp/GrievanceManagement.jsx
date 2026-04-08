@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
   ShieldAlert, 
@@ -15,13 +16,15 @@ import {
   Search,
   Filter,
   Eye,
-  Send
+  Send,
+  ArrowLeft
 } from 'lucide-react';
 
 const GrievanceManagement = () => {
   const [view, setView] = useState('dashboard');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const navigate = useNavigate();
 
   const grievances = [
     { id: 'GRV-001', subject: 'Hardware Issue in Office', cat: 'Facilities', severity: 'Medium', status: 'In Review', dept: 'IT', time: '2h ago', anonymous: false },
@@ -315,6 +318,20 @@ const GrievanceManagement = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="glass-card" 
+          style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Grievance Management</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Submit and track workplace concerns securely.</p>
+        </div>
+      </header>
+      
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between',

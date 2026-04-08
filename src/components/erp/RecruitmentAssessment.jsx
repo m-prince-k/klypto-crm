@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Briefcase, 
   Users, 
@@ -15,12 +16,14 @@ import {
   Star,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  ArrowLeft
 } from 'lucide-react';
 
 const RecruitmentAssessment = () => {
   const [activeSubView, setActiveSubView] = useState('pipeline');
   const [isAddingJob, setIsAddingJob] = useState(false);
+  const navigate = useNavigate();
 
   const subViews = [
     { id: 'jobs', label: 'Job Manager', icon: <Briefcase size={18} /> },
@@ -386,6 +389,20 @@ const RecruitmentAssessment = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="glass-card" 
+          style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Recruitment & Assessment</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Manage jobs, candidates, and hiring workflows.</p>
+        </div>
+      </header>
+      
       {/* Sub-navigation */}
       <div style={{ 
         display: 'flex', 

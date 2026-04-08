@@ -8,6 +8,7 @@ import Settings from './pages/Settings';
 import ERP from './pages/ERP';
 import RecruitmentAssessment from './components/erp/RecruitmentAssessment';
 import GrievanceManagement from './components/erp/GrievanceManagement';
+import Payroll from './components/erp/Payroll';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import './index.css';
 
@@ -37,18 +38,9 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/erp" element={<ERP />} />
-              <Route path="/recruitment" element={
-                <div className="erp-tab-content">
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "24px" }}>Recruitment & Assessment</h2>
-                  <RecruitmentAssessment />
-                </div>
-              } />
-              <Route path="/grievances" element={
-                <div className="erp-tab-content">
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "24px" }}>Grievance Management</h2>
-                  <GrievanceManagement />
-                </div>
-              } />
+              <Route path="/recruitment" element={<RecruitmentAssessment />} />
+              <Route path="/grievances" element={<GrievanceManagement />} />
+              <Route path="/payroll" element={<Payroll />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>

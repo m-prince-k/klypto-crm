@@ -9,7 +9,8 @@ import {
   LogOut,
   Command,
   Package,
-  ShieldAlert
+  ShieldAlert,
+  Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,6 +21,7 @@ const Sidebar = () => {
     { title: 'Pipeline', icon: <Briefcase size={20} />, path: '/pipeline' },
     { title: 'Recruitment', icon: <Users size={20} />, path: '/recruitment' },
     { title: 'Grievances', icon: <ShieldAlert size={20} />, path: '/grievances' },
+    { title: 'Payroll', icon: <Wallet size={20} />, path: '/payroll' },
     { title: 'ERP Portal', icon: <Package size={20} />, path: '/erp' },
     { title: 'Settings', icon: <Settings size={20} />, path: '/settings' },
   ];

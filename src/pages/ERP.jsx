@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import OrgSetup from "../components/erp/OrgSetup";
 import EntityManagement from "../components/erp/EntityManagement";
@@ -10,6 +11,7 @@ import ApprovalQueue from "../components/erp/ApprovalQueue";
 import ERPAnalytics from "../components/erp/ERPAnalytics";
 import RecruitmentAssessment from "../components/erp/RecruitmentAssessment";
 import GrievanceManagement from "../components/erp/GrievanceManagement";
+import Payroll from "../components/erp/Payroll";
 import {
   Building2,
   Users2,
@@ -22,6 +24,8 @@ import {
   Plus,
   Users,
   ShieldAlert,
+  Wallet,
+  ArrowLeft,
 } from "lucide-react";
 
 const TabContent = ({ title, children, showAdd = true }) => (
@@ -56,6 +60,7 @@ const TabContent = ({ title, children, showAdd = true }) => (
 
 const ERP = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
 
   const tabs = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={18} /> },
@@ -67,6 +72,7 @@ const ERP = () => {
     { id: "projects", label: "Projects", icon: <ClipboardList size={18} /> },
     { id: "recruitment", label: "Recruitment", icon: <Users size={18} /> },
     { id: "grievances", label: "Grievances", icon: <ShieldAlert size={18} /> },
+    { id: "payroll", label: "Payroll", icon: <Wallet size={18} /> },
     { id: "approvals", label: "Approvals", icon: <CheckCircle2 size={18} /> },
   ];
 
@@ -80,15 +86,24 @@ const ERP = () => {
         gap: "24px",
       }}
     >
-      <header>
-        <h1
-          style={{ fontSize: "32px", fontWeight: "800", marginBottom: "8px" }}
+      <header style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="glass-card" 
+          style={{ width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}
         >
-          ERP Portal
-        </h1>
-        <p style={{ color: "var(--text-muted)" }}>
-          Manage your organization's core operations and resources.
-        </p>
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1
+            style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}
+          >
+            ERP Portal
+          </h1>
+          <p style={{ color: "var(--text-muted)" }}>
+            Manage your organization's core operations and resources.
+          </p>
+        </div>
       </header>
 
       {/* Tab Navigation */}
@@ -178,14 +193,20 @@ const ERP = () => {
           )}
 
           {activeTab === "recruitment" && (
-            <TabContent key="recruitment" title="Recruitment & Assessment">
+            <TabContent key="recruitment" title="" showAdd={false}>
               <RecruitmentAssessment />
             </TabContent>
           )}
 
           {activeTab === "grievances" && (
-            <TabContent key="grievances" title="Grievance Management">
+            <TabContent key="grievances" title="" showAdd={false}>
               <GrievanceManagement />
+            </TabContent>
+          )}
+
+          {activeTab === "payroll" && (
+            <TabContent key="payroll" title="" showAdd={false}>
+              <Payroll />
             </TabContent>
           )}
 
