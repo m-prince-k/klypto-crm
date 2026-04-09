@@ -10,6 +10,10 @@ import {
   AlertCircle,
   Loader,
   CheckCircle,
+  ShieldCheck,
+  Shield,
+  Briefcase,
+  UserRound,
 } from "lucide-react";
 import "../styles/auth.css";
 
@@ -18,25 +22,25 @@ const AVAILABLE_ROLES = [
     id: "SUPER_ADMIN",
     label: "Super Admin",
     description: "Full system access and configuration",
-    icon: "👑",
+    icon: ShieldCheck,
   },
   {
     id: "ADMIN",
     label: "Administrator",
     description: "Manage users and organization settings",
-    icon: "🔐",
+    icon: Shield,
   },
   {
     id: "MANAGER",
     label: "Manager",
     description: "Oversee team and projects",
-    icon: "👔",
+    icon: Briefcase,
   },
   {
     id: "EMPLOYEE",
     label: "Employee",
     description: "Access to core features",
-    icon: "👤",
+    icon: UserRound,
   },
 ];
 
@@ -323,31 +327,36 @@ const Signup = () => {
           <div className="form-group">
             <label className="form-label">Select Your Role</label>
             <div className="role-grid">
-              {AVAILABLE_ROLES.map((role) => (
-                <div
-                  key={role.id}
-                  className={`role-card ${selectedRole === role.id ? "selected" : ""}`}
-                  onClick={() => !loading && setSelectedRole(role.id)}
-                >
-                  <span className="role-icon">{role.icon}</span>
-                  <input
-                    type="radio"
-                    name="role"
-                    value={role.id}
-                    checked={selectedRole === role.id}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    disabled={loading}
-                    style={{ display: "none" }}
-                  />
-                  <h3 className="role-title">{role.label}</h3>
-                  <p className="role-description">{role.description}</p>
-                  {selectedRole === role.id && (
-                    <div className="role-check">
-                      <CheckCircle size={20} />
-                    </div>
-                  )}
-                </div>
-              ))}
+              {AVAILABLE_ROLES.map((role) => {
+                const RoleIcon = role.icon;
+                return (
+                  <div
+                    key={role.id}
+                    className={`role-card ${selectedRole === role.id ? "selected" : ""}`}
+                    onClick={() => !loading && setSelectedRole(role.id)}
+                  >
+                    <span className="role-icon">
+                      <RoleIcon size={22} strokeWidth={1.8} />
+                    </span>
+                    <input
+                      type="radio"
+                      name="role"
+                      value={role.id}
+                      checked={selectedRole === role.id}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      disabled={loading}
+                      style={{ display: "none" }}
+                    />
+                    <h3 className="role-title">{role.label}</h3>
+                    <p className="role-description">{role.description}</p>
+                    {selectedRole === role.id && (
+                      <div className="role-check">
+                        <CheckCircle size={20} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
