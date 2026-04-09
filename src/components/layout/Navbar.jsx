@@ -181,7 +181,7 @@ const Navbar = ({ onMenuClick }) => {
           <Bell size={20} />
         </button>
 
-        <div style={{ position: "relative" }}>
+        <div ref={settingsRef} style={{ position: "relative" }}>
           <button
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             style={{
