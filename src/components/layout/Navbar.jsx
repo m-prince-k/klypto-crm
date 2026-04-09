@@ -1,20 +1,47 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { Search, Bell, Plus, Settings, Moon, Sun, Menu } from "lucide-react";
+import { logoutUser } from "../../store/auth/authSlice";
 
 const Navbar = ({ onMenuClick }) => {
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "dark",
   );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = React.useRef(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    if (isSettingsOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [isSettingsOpen]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  const handleLogout = async () => {
+    setIsSettingsOpen(false);
+    await dispatch(logoutUser());
+    navigate("/login");
   };
 
   return (
@@ -221,6 +248,7 @@ const Navbar = ({ onMenuClick }) => {
                 }}
               />
               <button
+                onClick={handleLogout}
                 style={{
                   padding: "10px 16px",
                   textAlign: "left",
@@ -228,6 +256,9 @@ const Navbar = ({ onMenuClick }) => {
                   width: "100%",
                   color: "#ef4444",
                   display: "block",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
                 }}
               >
                 Log out
