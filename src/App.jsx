@@ -11,6 +11,7 @@ import Navbar from "./components/layout/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Settings from "./pages/Settings";
+import RolesAccess from "./pages/RolesAccess";
 import ERP from "./pages/ERP";
 import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
 import GrievanceManagement from "./components/erp/GrievanceManagement";
@@ -103,6 +104,7 @@ function AppLayout() {
             <Route path="/hrms" element={<HRMS />} />
             <Route path="/leave" element={<Leave />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/roles-access" element={<RolesAccess />} />
           </Routes>
         </main>
       </div>

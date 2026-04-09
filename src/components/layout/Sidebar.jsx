@@ -47,6 +47,11 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
     { title: "ERP Portal", icon: <Package size={20} />, path: "/erp" },
     { title: "HRMS", icon: <BadgeCheck size={20} />, path: "/hrms" },
     { title: "Leave", icon: <CalendarDays size={20} />, path: "/leave" },
+    {
+      title: "Roles & Access",
+      icon: <ShieldAlert size={20} />,
+      path: "/roles-access",
+    },
     { title: "Settings", icon: <Settings size={20} />, path: "/settings" },
   ];
 

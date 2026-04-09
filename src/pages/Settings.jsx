@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   User,
   Mail,
@@ -70,6 +71,18 @@ const Settings = () => {
       dispatch(clearError());
     };
   }, [dispatch, isAuthenticated, accessToken]);
+
+  const canManageRbac = !!user?.access?.canManageRbac;
+
+  const accessSummary = useMemo(() => {
+    if (!user?.access) return "No access data";
+    const permissions = [];
+    if (user.access.isSuperAdmin) permissions.push("Super Admin");
+    if (user.access.canManageUsers) permissions.push("Manage Users");
+    if (user.access.canManageRbac) permissions.push("Manage RBAC");
+    if (user.access.canViewDashboard) permissions.push("View Dashboard");
+    return permissions.length ? permissions.join(", ") : "No permissions";
+  }, [user]);
 
   const fullName = user?.fullName || "";
   const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -223,7 +236,37 @@ const Settings = () => {
                 value={accountStatus}
                 icon={<Activity size={16} />}
               />
+              <ReadOnlyField
+                label="Access Permissions"
+                value={accessSummary}
+                icon={<Shield size={16} />}
+              />
             </div>
+
+            {canManageRbac && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Link
+                  to="/roles-access"
+                  style={{
+                    backgroundColor: "var(--primary)",
+                    color: "white",
+                    borderRadius: "8px",
+                    padding: "10px 14px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  Open Roles & Access
+                </Link>
+              </div>
+            )}
           </>
         )}
       </div>
