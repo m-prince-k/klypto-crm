@@ -118,6 +118,29 @@ const RolesAccess = () => {
     }
   }, [isAuthenticated, accessToken, canManageRbac]);
 
+  useEffect(() => {
+    if (!openRolePickerUserId) {
+      return;
+    }
+
+    const handleClickOutside = (event) => {
+      const target = event.target;
+      if (target instanceof Element) {
+        const insideRolePicker = target.closest('[data-role-picker="true"]');
+        if (insideRolePicker) {
+          return;
+        }
+      }
+
+      setOpenRolePickerUserId(null);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openRolePickerUserId]);
+
   const handleAssignRole = async (targetUserId) => {
     const roleName = selectedRoles[targetUserId];
     if (!roleName) {
@@ -609,8 +632,8 @@ const RolesAccess = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <div style={{ position: "relative" }}>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <div style={{ position: "relative" }} data-role-picker="true">
                       <button
                         type="button"
                         onClick={() =>
