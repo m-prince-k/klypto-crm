@@ -131,7 +131,6 @@ const Signup = () => {
         password: formData.password,
         fullName: formData.fullName,
         organizationName: formData.organizationName,
-        requestedRole: selectedRole, // Note: Backend might override based on business logic
       }),
     );
   };
