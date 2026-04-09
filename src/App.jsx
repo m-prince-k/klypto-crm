@@ -9,11 +9,17 @@ import ERP from "./pages/ERP";
 import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
 import GrievanceManagement from "./components/erp/GrievanceManagement";
 import Payroll from "./components/erp/Payroll";
+import { usePageSEO } from "./hooks/usePageSEO";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import HRMS from "./pages/HRMS";
 import Leave from "./pages/Leave";
 import { useState } from "react";
 import "./index.css";
+
+const SEOHelper = () => {
+  usePageSEO();
+  return null;
+};
 
 function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -31,6 +37,7 @@ function App() {
 
   return (
     <Router>
+      <SEOHelper />
       <div
         className="app-container"
         style={{
