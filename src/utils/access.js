@@ -12,12 +12,6 @@ export const DASHBOARD_MODULES = [
     description: "Lead management",
   },
   {
-    key: "pipeline",
-    label: "Pipeline",
-    route: "/pipeline",
-    description: "Sales pipeline",
-  },
-  {
     key: "erp",
     label: "ERP Portal",
     route: "/erp",
@@ -73,7 +67,6 @@ export const DEFAULT_ROLE_MODULES = {
   ADMIN: [
     "dashboard",
     "leads",
-    "pipeline",
     "erp",
     "recruitment",
     "grievances",
@@ -85,7 +78,6 @@ export const DEFAULT_ROLE_MODULES = {
   MANAGER: [
     "dashboard",
     "leads",
-    "pipeline",
     "recruitment",
     "grievances",
     "leave",

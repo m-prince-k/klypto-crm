@@ -50,12 +50,6 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       module: "leads",
     },
     {
-      title: "Pipeline",
-      icon: <Briefcase size={20} />,
-      path: "/pipeline",
-      module: "pipeline",
-    },
-    {
       title: "Recruitment",
       icon: <Users size={20} />,
       path: "/recruitment",

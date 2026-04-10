@@ -21,7 +21,6 @@ import Attendance from "../components/hrms/Attendance";
 import LeaveManagement from "../components/hrms/LeaveManagement";
 import PayrollStructure from "../components/hrms/PayrollStructure";
 import PerformanceReviews from "../components/hrms/PerformanceReviews";
-import EmployeeSelfService from "../components/hrms/EmployeeSelfService";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -69,7 +68,6 @@ const HRMS = ({ initialTab = "overview" }) => {
     { id: "leave", label: "Leave", icon: <CalendarCheck2 size={18} /> },
     { id: "payroll", label: "Payroll", icon: <Wallet2 size={18} /> },
     { id: "performance", label: "Performance", icon: <Award size={18} /> },
-    { id: "selfservice", label: "Portal", icon: <Laptop2 size={18} /> },
   ];
 
   useEffect(() => {
@@ -226,7 +224,7 @@ const HRMS = ({ initialTab = "overview" }) => {
           )}
 
           {activeTab === "employees" && (
-            <TabContent key="employees" title="Employee Master">
+            <TabContent key="employees" title="Employee Master" showAdd={false}>
               <EmployeeMaster />
             </TabContent>
           )}
@@ -273,15 +271,6 @@ const HRMS = ({ initialTab = "overview" }) => {
             </TabContent>
           )}
 
-          {activeTab === "selfservice" && (
-            <TabContent
-              key="selfservice"
-              title="Employee Self-Service"
-              showAdd={false}
-            >
-              <EmployeeSelfService />
-            </TabContent>
-          )}
         </AnimatePresence>
       </main>
     </div>

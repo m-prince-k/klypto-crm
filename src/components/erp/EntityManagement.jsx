@@ -1,199 +1,260 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Network,
   UserSquare2,
   ChevronRight,
   MoreVertical,
   Building2,
+  Plus,
+  Loader,
+  X,
+  Target,
+  Users,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import apiClient from "../../api/apiClient";
 
 const EntityManagement = () => {
-  const branches = [
-    {
-      id: "1",
-      name: "HQ - San Francisco",
-      type: "Main",
-      head: "Alice Johnson",
-      depts: 5,
-    },
-    { id: "2", name: "NY Office", type: "Branch", head: "Bob Smith", depts: 3 },
-    {
-      id: "3",
-      name: "London Hub",
-      type: "International",
-      head: "Charlie Brown",
-      depts: 4,
-    },
-  ];
+  const [branches, setBranches] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showBranchModal, setShowBranchModal] = useState(false);
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const departments = [
-    {
-      id: "D1",
-      name: "Engineering",
-      branch: "San Francisco",
-      head: "David Wilson",
-      staff: 45,
-    },
-    {
-      id: "D2",
-      name: "Sales & Marketing",
-      branch: "San Francisco",
-      head: "Elena Rodriguez",
-      staff: 20,
-    },
-    {
-      id: "D3",
-      name: "Operations",
-      branch: "NY Office",
-      head: "Frank Miller",
-      staff: 15,
-    },
-  ];
+  const [branchForm, setBranchForm] = useState({ name: "", type: "Branch", headId: "" });
+  const [deptForm, setDeptForm] = useState({ name: "", branchId: "", headId: "" });
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [branchRes, deptRes, empRes] = await Promise.all([
+        apiClient.get("/entities/branches"),
+        apiClient.get("/entities/departments"),
+        apiClient.get("/employees")
+      ]);
+      setBranches(branchRes.data);
+      setDepartments(deptRes.data);
+      setEmployees(empRes.data);
+    } catch (err) {
+      console.error("Failed to fetch entities", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleCreateBranch = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await apiClient.post("/entities/branches", branchForm);
+      setShowBranchModal(false);
+      setBranchForm({ name: "", type: "Branch", headId: "" });
+      fetchData();
+    } catch (err) {
+      alert("Failed to create branch");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreateDept = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await apiClient.post("/entities/departments", deptForm);
+      setShowDeptModal(false);
+      setDeptForm({ name: "", branchId: "", headId: "" });
+      fetchData();
+    } catch (err) {
+      alert("Failed to create department");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div
-      className="responsive-grid-2 erp-entity-grid"
-      style={{ display: "grid", gap: "24px" }}
-    >
-      {/* Branches List */}
-      <div className="glass-card" style={{ padding: "24px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <Network size={20} className="text-primary" /> Branches
-          </h3>
-          <button
-            style={{
-              color: "var(--primary)",
-              fontSize: "14px",
-              fontWeight: "500",
-            }}
-          >
-            View All
-          </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div
+        className="erp-entity-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "8px",
+        }}
+      >
+        <div>
+          <h2 style={{ fontSize: "20px", fontWeight: "800" }}>Organization Hierarchy</h2>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Manage branches and departmental structures.</p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {branches.map((branch) => (
-            <div
-              key={branch.id}
-              className="erp-entity-item"
-              style={{
-                padding: "16px",
-                backgroundColor: "var(--tag-bg)",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div
-                style={{
-                  padding: "10px",
-                  backgroundColor: "var(--icon-bg)",
-                  borderRadius: "8px",
-                  color: "var(--primary)",
-                }}
-              >
-                <Building2 size={24} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h4 style={{ fontSize: "15px", fontWeight: "600" }}>
-                  {branch.name}
-                </h4>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {branch.type} • {branch.depts} Departments
-                </p>
-              </div>
-              <button style={{ color: "var(--text-muted)" }}>
-                <MoreVertical size={18} />
-              </button>
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button onClick={() => setShowBranchModal(true)} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Plus size={18} /> Add Branch
+          </button>
+          <button onClick={() => setShowDeptModal(true)} className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Plus size={18} /> Add Department
+          </button>
         </div>
       </div>
 
-      {/* Departments List */}
-      <div className="glass-card" style={{ padding: "24px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <UserSquare2 size={20} className="text-primary" /> Departments
-          </h3>
-          <button
-            style={{
-              color: "var(--primary)",
-              fontSize: "14px",
-              fontWeight: "500",
-            }}
-          >
-            View All
-          </button>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {departments.map((dept) => (
-            <div
-              key={dept.id}
-              className="erp-entity-item"
-              style={{
-                padding: "16px",
-                backgroundColor: "var(--tag-bg)",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <h4 style={{ fontSize: "15px", fontWeight: "600" }}>
-                  {dept.name}
-                </h4>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {dept.branch} • {dept.staff} Members
-                </p>
-              </div>
-              <div className="erp-entity-meta" style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Head
-                </p>
-                <p style={{ fontSize: "14px", fontWeight: "500" }}>
-                  {dept.head}
-                </p>
-              </div>
-              <ChevronRight size={18} style={{ color: "var(--text-muted)" }} />
+      <div className="responsive-grid-2 erp-entity-grid" style={{ display: "grid", gap: "24px" }}>
+        {/* Branches List */}
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "17px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Network size={20} className="text-primary" /> Branches
+            </h3>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>{branches.length} Total</span>
+          </div>
+          
+          {loading ? (
+            <div style={{ height: "100px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={24} /></div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {branches.map((branch) => (
+                <div key={branch.id} className="erp-entity-item" style={{ padding: "16px", backgroundColor: "var(--tag-bg)", borderRadius: "12px", display: "flex", alignItems: "center", gap: "16px", border: "1px solid var(--border)" }}>
+                  <div style={{ padding: "10px", backgroundColor: "var(--icon-bg)", borderRadius: "8px", color: "var(--primary)" }}>
+                    <Building2 size={24} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "700" }}>{branch.name}</h4>
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+                      {branch.type} • {branch._count?.departments || 0} Depts • {branch._count?.employees || 0} Staff
+                    </p>
+                  </div>
+                  {branch.head && (
+                    <div style={{ textAlign: "right", paddingRight: "10px" }}>
+                      <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Head</p>
+                      <p style={{ fontSize: "12px", fontWeight: "600" }}>{branch.head.name}</p>
+                    </div>
+                  )}
+                  <button style={{ color: "var(--text-muted)" }}><MoreVertical size={16} /></button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* Departments List */}
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "17px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+              <UserSquare2 size={20} style={{ color: "var(--primary)" }} /> Departments
+            </h3>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>{departments.length} Units</span>
+          </div>
+
+          {loading ? (
+            <div style={{ height: "100px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={24} /></div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {departments.map((dept) => (
+                <div key={dept.id} className="erp-entity-item" style={{ padding: "16px", backgroundColor: "var(--tag-bg)", borderRadius: "12px", display: "flex", alignItems: "center", gap: "16px", border: "1px solid var(--border)" }}>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "700" }}>{dept.name}</h4>
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+                      {dept.branch?.name} • {dept._count?.employees || 0} Members
+                    </p>
+                  </div>
+                  <div style={{ textAlign: "right", minWidth: "120px" }}>
+                    <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Leader</p>
+                    <p style={{ fontSize: "13px", fontWeight: "600" }}>{dept.head?.name || "Unassigned"}</p>
+                  </div>
+                  <ChevronRight size={18} style={{ color: "var(--text-muted)" }} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Add Branch Modal */}
+      <AnimatePresence>
+        {showBranchModal && (
+          <div className="modal-overlay" style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ width: "100%", maxWidth: "450px", padding: "32px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "800" }}>New Corporate Branch</h2>
+                <button onClick={() => setShowBranchModal(false)}><X size={20} /></button>
+              </div>
+              <form onSubmit={handleCreateBranch} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Branch Name</label>
+                  <input required value={branchForm.name} onChange={e => setBranchForm({ ...branchForm, name: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Branch Type</label>
+                  <select value={branchForm.type} onChange={e => setBranchForm({ ...branchForm, type: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }}>
+                    <option value="Main">Main Headquarters</option>
+                    <option value="Branch">Regional Branch</option>
+                    <option value="International">International Hub</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Branch Head</label>
+                  <select value={branchForm.headId} onChange={e => setBranchForm({ ...branchForm, headId: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }}>
+                    <option value="">Select Employee</option>
+                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                  </select>
+                </div>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={submitting}
+                  style={{ padding: "14px", borderRadius: "10px", marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  {submitting ? <Loader size={18} className="spinner" /> : "Initialize Branch"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {showDeptModal && (
+          <div className="modal-overlay" style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ width: "100%", maxWidth: "450px", padding: "32px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "800" }}>New Functional Department</h2>
+                <button onClick={() => setShowDeptModal(false)}><X size={20} /></button>
+              </div>
+              <form onSubmit={handleCreateDept} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Department Name</label>
+                  <input required value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Assign to Branch</label>
+                  <select required value={deptForm.branchId} onChange={e => setDeptForm({ ...deptForm, branchId: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }}>
+                    <option value="">Select Branch</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Department Head</label>
+                  <select value={deptForm.headId} onChange={e => setDeptForm({ ...deptForm, headId: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "8px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border)", color: "white" }}>
+                    <option value="">Select Employee</option>
+                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                  </select>
+                </div>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={submitting}
+                  style={{ padding: "14px", borderRadius: "10px", marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  {submitting ? <Loader size={18} className="spinner" /> : "Create Department"}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

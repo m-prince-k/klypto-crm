@@ -10,10 +10,6 @@ const pageMetadata = {
     title: "Leads Management | Klypto CRM",
     description: "Manage and track your business leads effectively.",
   },
-  "/pipeline": {
-    title: "Sales Pipeline | Klypto CRM",
-    description: "Track your sales progress and deal pipeline.",
-  },
   "/erp": {
     title: "ERP Enterprise | Klypto CRM",
     description: "Comprehensive Enterprise Resource Planning dashboard.",

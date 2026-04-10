@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Users2,
@@ -8,40 +8,69 @@ import {
   ShieldCheck,
   BadgeCheck,
   TrendingUp,
-  TrendingDown,
+  Loader,
 } from "lucide-react";
+import apiClient from "../../api/apiClient";
 
 const HRMSOverview = () => {
-  const stats = [
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await apiClient.get("/hrms-overview/stats");
+        setStats(response.data);
+      } catch (err) {
+        console.error("Failed to fetch HRMS overview stats", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <Loader className="spinner" size={24} color="var(--text-muted)" />
+      </div>
+    );
+  }
+
+  const statCards = [
     {
       label: "Total Employees",
-      value: "342",
-      trend: "+8 this month",
-      up: true,
+      value: stats?.totalEmployees || "0",
+      trend: "Organization headcount",
       icon: <Users2 size={18} />,
       accent: "#0ea5e9",
     },
     {
       label: "Attendance Rate",
-      value: "96.4%",
-      trend: "+1.2% vs last month",
-      up: true,
+      value: stats?.attendanceRate || "0%",
+      trend: "Active staff today",
       icon: <Clock3 size={18} />,
       accent: "#10b981",
     },
     {
-      label: "Pending Leave Requests",
-      value: "18",
-      trend: "6 urgent approvals",
-      up: false,
+      label: "Pending Leaves",
+      value: stats?.pendingLeaves || "0",
+      trend: "Awaiting approval",
       icon: <CalendarCheck2 size={18} />,
       accent: "#f59e0b",
     },
     {
       label: "Payroll Ready",
-      value: "97%",
-      trend: "Next run in 4 days",
-      up: null,
+      value: stats?.payrollReady || "0%",
+      trend: "Salary defined",
       icon: <Wallet2 size={18} />,
       accent: "#8b5cf6",
     },
@@ -49,19 +78,19 @@ const HRMSOverview = () => {
 
   const milestones = [
     {
-      title: "Employee master synced",
-      detail: "All core employee profiles are centralized.",
-      status: "Complete",
+      title: "Core Infrastructure Active",
+      detail: "Backend APIs and Database schemas for HRMS are fully operational.",
+      status: "Ready",
     },
     {
-      title: "Shift calendar published",
-      detail: "Monthly shifts and holidays are visible to managers.",
+      title: "Real-time Attendance Sync",
+      detail: "Live tracking of employee check-ins and check-outs is enabled.",
       status: "Active",
     },
     {
-      title: "Payroll structure mapped",
-      detail: "Earnings, deductions, and approvals are ready.",
-      status: "In review",
+      title: "Payroll & Performance Ready",
+      detail: "Modules for salary management and performance reviews are integrated.",
+      status: "Active",
     },
   ];
 
@@ -75,7 +104,7 @@ const HRMSOverview = () => {
           gap: "20px",
         }}
       >
-        {stats.map((stat, i) => (
+        {statCards.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
@@ -109,20 +138,10 @@ const HRMSOverview = () => {
                   gap: "4px",
                   fontSize: "12px",
                   fontWeight: "700",
-                  color:
-                    stat.up === null
-                      ? "var(--text-muted)"
-                      : stat.up
-                        ? "#10b981"
-                        : "#ef4444",
+                  color: "var(--text-muted)",
                 }}
               >
-                {stat.up === null ? null : stat.up ? (
-                  <TrendingUp size={14} />
-                ) : (
-                  <TrendingDown size={14} />
-                )}{" "}
-                {stat.trend}
+                <TrendingUp size={14} /> {stat.trend}
               </div>
             </div>
             <div
@@ -248,15 +267,15 @@ const HRMSOverview = () => {
               marginBottom: "16px",
             }}
           >
-            HRMS Focus Areas
+            HRMS Multi-Tenant Focus
           </h3>
           <div style={{ display: "grid", gap: "12px" }}>
             {[
-              "Employee master & reporting structure",
-              "Attendance, shifts, and holiday calendar",
-              "Leave policies, balances, and approvals",
-              "Payroll structure and approvals",
-              "Performance reviews and employee self-service",
+              "Employee Lifecycle & Directory",
+              "Dynamic Attendance & Reports",
+              "Leave Workflow & Policy Engine",
+              "Payroll Processing & Payslips",
+              "Performance Review Cycles",
             ].map((item) => (
               <div
                 key={item}

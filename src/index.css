@@ -90,6 +90,35 @@ button {
   transform: translateY(-1px);
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+select {
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+}
+
+select option {
+  background-color: #1e293b; /* Explicit dark background */
+  color: #f8fafc; /* Explicit light text */
+  padding: 12px;
+}
+
+[data-theme="light"] select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+
 .app-container {
   min-width: 0;
 }

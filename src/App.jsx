@@ -111,15 +111,6 @@ function AppLayout() {
               }
             />
             <Route
-              path="/pipeline"
-              element={
-                <ProtectedRoute
-                  Component={Leads}
-                  requiredModules={["pipeline"]}
-                />
-              }
-            />
-            <Route
               path="/erp"
               element={
                 <ProtectedRoute Component={ERP} requiredModules={["erp"]} />

@@ -1,42 +1,125 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   CalendarCheck2,
   ShieldAlert,
   CheckCircle2,
   Clock3,
+  XCircle,
+  Plus,
+  Loader,
 } from "lucide-react";
+import apiClient from "../../api/apiClient";
 
 const LeaveManagement = () => {
-  const policies = [
-    { label: "Annual Leave Balance", value: "14 days" },
-    { label: "Sick Leave Balance", value: "6 days" },
-    { label: "Carry Forward Limit", value: "5 days" },
-    { label: "Approval SLA", value: "24 hours" },
-  ];
+  const [requests, setRequests] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    employeeId: "",
+    type: "Annual",
+    startDate: "",
+    endDate: "",
+    reason: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null); // ID of record being updated
 
-  const requests = [
-    {
-      name: "Ava Johnson",
-      type: "Annual Leave",
-      dates: "Apr 11 - Apr 13",
-      status: "Pending",
-    },
-    {
-      name: "Rohan Mehta",
-      type: "Sick Leave",
-      dates: "Apr 08",
-      status: "Approved",
-    },
-    {
-      name: "Maya Patel",
-      type: "Maternity Leave",
-      dates: "Apr 15 - May 15",
-      status: "Pending",
-    },
-  ];
+  const fetchData = async () => {
+    try {
+      const [leavesRes, empRes] = await Promise.all([
+        apiClient.get("/leaves"),
+        apiClient.get("/employees"),
+      ]);
+      setRequests(leavesRes.data);
+      setEmployees(empRes.data);
+    } catch (err) {
+      console.error("Failed to fetch leave data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleStatusUpdate = async (id, status) => {
+    setActionLoading(id);
+    try {
+      await apiClient.patch(`/leaves/${id}/status`, { status });
+      fetchData();
+    } catch (err) {
+      console.error("Failed to update leave status", err);
+      alert("Failed to update leave status");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleApplyLeave = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const submissionData = {
+        ...formData,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+      };
+      await apiClient.post("/leaves", submissionData);
+      setShowModal(false);
+      setFormData({
+        employeeId: "",
+        type: "Annual",
+        startDate: "",
+        endDate: "",
+        reason: "",
+      });
+      fetchData();
+    } catch (err) {
+      console.error("Failed to apply leave", err);
+      const msg = err.message || err; // apiClient returns message string
+      alert(`Failed to apply leave: ${Array.isArray(msg) ? msg.join(", ") : msg}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "200px",
+        }}
+      >
+        <Loader className="spinner" size={24} color="var(--text-muted)" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Leave Management</h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary"
+          style={{ display: "flex", alignItems: "center", gap: "8px" }}
+        >
+          <Plus size={18} /> Apply Leave
+        </button>
+      </div>
+
       <div className="glass-card" style={{ padding: "24px" }}>
         <h3
           style={{
@@ -48,106 +131,295 @@ const LeaveManagement = () => {
             gap: "8px",
           }}
         >
-          <CalendarCheck2 size={18} /> Leave Policy Engine
+          <CalendarCheck2 size={18} /> Leave Requests
         </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {policies.map((policy) => (
-            <div
-              key={policy.label}
-              style={{
-                padding: "16px",
-                borderRadius: "12px",
-                backgroundColor: "var(--column-bg)",
-                border: "1px solid var(--border)",
-              }}
-            >
+        <div style={{ display: "grid", gap: "12px" }}>
+          {requests.length === 0 ? (
+            <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+              No leave requests found.
+            </div>
+          ) : (
+            requests.map((request) => (
               <div
+                key={request.id}
                 style={{
-                  fontSize: "12px",
-                  color: "var(--text-muted)",
-                  marginBottom: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                  alignItems: "center",
+                  padding: "14px",
+                  borderRadius: "12px",
+                  backgroundColor: "var(--column-bg)",
+                  border: "1px solid var(--border)",
                 }}
               >
-                {policy.label}
+                <div>
+                  <div style={{ fontSize: "14px", fontWeight: "700" }}>
+                    {request.employee?.name || "Unknown"}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    {request.type} ·{" "}
+                    {new Date(request.startDate).toLocaleDateString()} -{" "}
+                    {new Date(request.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color:
+                        request.status === "Approved"
+                          ? "#10b981"
+                          : request.status === "Rejected"
+                          ? "#ef4444"
+                          : "#f59e0b",
+                    }}
+                  >
+                    {request.status === "Approved" ? (
+                      <CheckCircle2 size={14} />
+                    ) : request.status === "Rejected" ? (
+                      <XCircle size={14} />
+                    ) : (
+                      <Clock3 size={14} />
+                    )}
+                    {request.status}
+                  </div>
+                  {request.status === "Pending" && (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleStatusUpdate(request.id, "Approved")}
+                        disabled={actionLoading === request.id}
+                        style={{ padding: "6px 14px", backgroundColor: "#10b981", display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        {actionLoading === request.id ? <Loader size={14} className="spinner" /> : <CheckCircle2 size={16} />} Approve
+                      </button>
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleStatusUpdate(request.id, "Rejected")}
+                        disabled={actionLoading === request.id}
+                        style={{ padding: "6px 14px", backgroundColor: "#ef4444", display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        {actionLoading === request.id ? <Loader size={14} className="spinner" /> : <XCircle size={16} />} Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: "22px", fontWeight: "800" }}>
-                {policy.value}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
-      <div className="glass-card" style={{ padding: "24px" }}>
-        <h3
-          style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
         >
-          Leave Requests
-        </h3>
-        <div style={{ display: "grid", gap: "12px" }}>
-          {requests.map((request) => (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="glass-card"
+            style={{ width: "min(90vw, 500px)", padding: "24px" }}
+          >
             <div
-              key={request.name}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                gap: "16px",
-                alignItems: "center",
-                padding: "14px",
-                borderRadius: "12px",
-                backgroundColor: "var(--column-bg)",
-                border: "1px solid var(--border)",
+                marginBottom: "24px",
               }}
             >
-              <div>
-                <div style={{ fontSize: "14px", fontWeight: "700" }}>
-                  {request.name}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {request.type} · {request.dates}
-                </div>
-              </div>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              <h3 style={{ fontSize: "20px", fontWeight: "700" }}>Apply Leave</h3>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{ color: "var(--text-muted)" }}
               >
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    fontSize: "12px",
-                    color:
-                      request.status === "Approved" ? "#10b981" : "#f59e0b",
-                  }}
-                >
-                  {request.status === "Approved" ? (
-                    <CheckCircle2 size={14} />
-                  ) : (
-                    <Clock3 size={14} />
-                  )}
-                  {request.status}
-                </div>
-                <button
-                  className="btn-primary"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <ShieldAlert size={14} /> Review
-                </button>
-              </div>
+                <XCircle size={20} />
+              </button>
             </div>
-          ))}
+
+            <form onSubmit={handleApplyLeave} style={{ display: "grid", gap: "16px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "13px",
+                    marginBottom: "8px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Select Employee
+                </label>
+                <select
+                  required
+                  value={formData.employeeId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, employeeId: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map((emp) => (
+                    <option
+                      key={emp.id}
+                      value={emp.id}
+                      style={{ backgroundColor: "var(--bg-dark)" }}
+                    >
+                      {emp.name} ({emp.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "13px",
+                    marginBottom: "8px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Leave Type
+                </label>
+                <select
+                  required
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <option value="Annual">Annual Leave</option>
+                  <option value="Sick">Sick Leave</option>
+                  <option value="Casual">Casual Leave</option>
+                  <option value="Maternity">Maternity Leave</option>
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      marginBottom: "8px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      marginBottom: "8px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-main)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "13px",
+                    marginBottom: "8px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Reason
+                </label>
+                <textarea
+                  value={formData.reason}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reason: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: "80px",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                    resize: "none",
+                  }}
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ marginTop: "12px" }}>
+                Submit Request
+              </button>
+            </form>
+          </motion.div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

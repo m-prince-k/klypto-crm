@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -13,18 +13,20 @@ import {
   CalendarCheck2,
   Clock3,
   Wallet2,
+  Loader,
 } from "lucide-react";
 import {
   DASHBOARD_MODULES,
   getAccessibleModules,
   hasModuleAccess,
 } from "../utils/access";
+import apiClient from "../api/apiClient";
 
-const StatCard = ({ title, value, change, icon, isPositive }) => (
+const StatCard = ({ title, value, change, icon, isPositive, trend }) => (
   <motion.div
     whileHover={{ y: -5 }}
     className="glass-card"
-    style={{ padding: "24px", flex: 1 }}
+    style={{ padding: "24px", flex: 1, minWidth: "240px" }}
   >
     <div
       style={{
@@ -47,19 +49,21 @@ const StatCard = ({ title, value, change, icon, isPositive }) => (
       >
         {icon}
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          color: isPositive ? "#10b981" : "#ef4444",
-          fontSize: "14px",
-          fontWeight: "600",
-        }}
-      >
-        {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-        {change}
-      </div>
+      {change && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            color: isPositive ? "#10b981" : "#ef4444",
+            fontSize: "14px",
+            fontWeight: "600",
+          }}
+        >
+          {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+          {change}
+        </div>
+      )}
     </div>
     <div
       style={{
@@ -70,76 +74,48 @@ const StatCard = ({ title, value, change, icon, isPositive }) => (
     >
       {title}
     </div>
-    <div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div>
+    <div style={{ fontSize: "28px", fontWeight: "700", marginBottom: "4px" }}>{value}</div>
+    {trend && <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{trend}</div>}
   </motion.div>
 );
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
+  const [hrmsStats, setHrmsStats] = useState(null);
+  const [crmStats, setCrmStats] = useState(null);
+  const [recentLeads, setRecentLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const access = user?.access;
   const accessibleModules = getAccessibleModules(access);
 
-  const stats = [
-    {
-      title: "Total Leads",
-      value: "1,284",
-      change: "+12.5%",
-      icon: <Users size={24} />,
-      isPositive: true,
-    },
-    {
-      title: "Active Deals",
-      value: "42",
-      change: "+5.2%",
-      icon: <Target size={24} />,
-      isPositive: true,
-    },
-    {
-      title: "Total Revenue",
-      value: "$128,430",
-      change: "-2.1%",
-      icon: <DollarSign size={24} />,
-      isPositive: false,
-    },
-    {
-      title: "Conversion",
-      value: "14.2%",
-      change: "+1.8%",
-      icon: <TrendingUp size={24} />,
-      isPositive: true,
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [hrmsRes, crmRes, recentRes] = await Promise.all([
+          apiClient.get("/hrms-overview/stats"),
+          apiClient.get("/crm-overview/stats"),
+          apiClient.get("/crm-overview/recent"),
+        ]);
+        setHrmsStats(hrmsRes.data);
+        setCrmStats(crmRes.data);
+        setRecentLeads(recentRes.data);
+      } catch (err) {
+        console.error("Failed to fetch dashboard data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
 
-  const hrmsStats = [
-    {
-      title: "Employee Headcount",
-      value: "342",
-      change: "+8 onboarded",
-      icon: <Users2 size={22} />,
-      isPositive: true,
-    },
-    {
-      title: "Attendance Rate",
-      value: "96.4%",
-      change: "+1.2%",
-      icon: <Clock3 size={22} />,
-      isPositive: true,
-    },
-    {
-      title: "Pending Leaves",
-      value: "18",
-      change: "6 urgent",
-      icon: <CalendarCheck2 size={22} />,
-      isPositive: false,
-    },
-    {
-      title: "Payroll Readiness",
-      value: "97%",
-      change: "Next run in 4 days",
-      icon: <Wallet2 size={22} />,
-      isPositive: true,
-    },
-  ];
+  if (loading) {
+    return (
+      <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader className="spinner" size={32} />
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -148,403 +124,102 @@ const Dashboard = () => {
       transition={{ duration: 0.5 }}
     >
       <header style={{ marginBottom: "32px" }}>
-        <h1
-          style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}
-        >
-          Executive Dashboard
-        </h1>
+        <h1 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}>Executive Dashboard</h1>
         <p style={{ color: "var(--text-muted)" }}>
-          Welcome back, {user?.fullName || "there"}. Here is what your role can
-          access today.
+          Welcome back, {user?.fullName || "there"}. Your organization is currently powered by live data sync.
         </p>
       </header>
 
       <div
         className="glass-card"
-        style={{
-          padding: "16px 20px",
-          marginBottom: "24px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          alignItems: "center",
-        }}
+        style={{ padding: "16px 20px", marginBottom: "24px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}
       >
-        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-          Assigned modules:
-        </span>
-        {accessibleModules.length ? (
-          accessibleModules.map((moduleKey) => {
-            const module = DASHBOARD_MODULES.find(
-              (item) => item.key === moduleKey,
-            );
-            return (
-              <Link
-                key={moduleKey}
-                to={module?.route || "/"}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--tag-bg)",
-                  color: "var(--text-main)",
-                  fontSize: "12px",
-                  textDecoration: "none",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {module?.label || moduleKey}
-              </Link>
-            );
-          })
-        ) : (
-          <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-            No dashboard modules assigned yet.
-          </span>
-        )}
+        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>Modules Online:</span>
+        {accessibleModules.map((moduleKey) => {
+          const module = DASHBOARD_MODULES.find((item) => item.key === moduleKey);
+          return (
+            <Link
+              key={moduleKey}
+              to={module?.route || "/"}
+              style={{ padding: "6px 14px", borderRadius: "999px", backgroundColor: "var(--tag-bg)", color: "var(--text-main)", fontSize: "12px", textDecoration: "none", border: "1px solid var(--border)", fontWeight: "600" }}
+            >
+              {module?.label || moduleKey}
+            </Link>
+          );
+        })}
       </div>
 
-      {hasModuleAccess(access, "leads") ||
-      hasModuleAccess(access, "pipeline") ? (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "24px",
-            marginBottom: "32px",
-          }}
-        >
-          {stats.map((stat, i) => (
-            <StatCard key={i} {...stat} style={{ minWidth: "200px" }} />
-          ))}
-        </div>
-      ) : null}
-
-      {hasModuleAccess(access, "hrms") ||
-      hasModuleAccess(access, "leave") ||
-      hasModuleAccess(access, "employees") ? (
-        <div style={{ marginBottom: "32px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "end",
-              marginBottom: "16px",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "700",
-                  marginBottom: "4px",
-                }}
-              >
-                HRMS Snapshot
-              </h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-                Core people operations aligned with the enterprise blueprint.
-              </p>
-            </div>
-            <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
-              {accessibleModules.includes("employees")
-                ? "Employee master · "
-                : ""}
-              {accessibleModules.includes("hrms") ? "attendance · " : ""}
-              {accessibleModules.includes("leave") ? "leave · " : ""}
-              {accessibleModules.includes("payroll") ? "payroll" : ""}
-            </div>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            {hrmsStats
-              .filter((stat) => {
-                if (stat.title === "Employee Headcount")
-                  return hasModuleAccess(access, "employees");
-                if (stat.title === "Attendance Rate")
-                  return hasModuleAccess(access, "hrms");
-                if (stat.title === "Pending Leaves")
-                  return hasModuleAccess(access, "leave");
-                if (stat.title === "Payroll Readiness")
-                  return hasModuleAccess(access, "payroll");
-                return false;
-              })
-              .map((stat, i) => (
-                <StatCard key={i} {...stat} />
-              ))}
+      {/* CRM Pipeline Stats */}
+      {(hasModuleAccess(access, "leads") || hasModuleAccess(access, "pipeline")) && (
+        <div style={{ marginBottom: "40px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>Sales Pipeline Summary</h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
+            <StatCard title="Total Leads" value={crmStats?.totalLeads || 0} trend="Total generated" icon={<Users size={24} />} isPositive={true} />
+            <StatCard title="Active Deals" value={crmStats?.activeDeals || 0} trend="In mid-pipeline" icon={<Target size={24} />} isPositive={true} />
+            <StatCard title="Pipeline Value" value={crmStats?.totalRevenue || "$0"} trend="Estimated potential" icon={<DollarSign size={24} />} isPositive={true} />
+            <StatCard title="Conversion" value={crmStats?.conversionRate || "0%"} trend="Rate of Won deals" icon={<TrendingUp size={24} />} isPositive={true} />
           </div>
         </div>
-      ) : null}
+      )}
 
-      {hasModuleAccess(access, "dashboard") ? (
-        <>
-          <div
-            className="responsive-grid-2"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            <div
-              className="glass-card"
-              style={{ padding: "24px", height: "400px", position: "relative" }}
-            >
-              <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
-                Revenue Performance
-              </h3>
-              <div
-                style={{
-                  height: "280px",
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: "12px",
-                  paddingBottom: "20px",
-                }}
-              >
-                {[40, 60, 45, 90, 65, 80, 55, 100, 75, 85].map((h, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${h}%` }}
-                    transition={{ delay: i * 0.1, duration: 1 }}
-                    style={{
-                      flex: 1,
-                      background:
-                        "linear-gradient(to top, var(--primary), #8b5cf6)",
-                      borderRadius: "6px 6px 0 0",
-                      opacity: 0.8,
-                    }}
-                  />
-                ))}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  color: "var(--text-muted)",
-                  fontSize: "12px",
-                  paddingTop: "12px",
-                  borderTop: "1px solid var(--border)",
-                }}
-              >
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-                <span>Jul</span>
-                <span>Aug</span>
-                <span>Sep</span>
-                <span>Oct</span>
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ padding: "24px" }}>
-              <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
-                Recent Leads
-              </h3>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                }}
-              >
-                {[
-                  {
-                    name: "Sarah Wilson",
-                    company: "TechFlow",
-                    value: "$12k",
-                    status: "Negotiation",
-                  },
-                  {
-                    name: "Marcus Chen",
-                    company: "Nova Labs",
-                    value: "$8.5k",
-                    status: "Discovery",
-                  },
-                  {
-                    name: "Elena Rodriguez",
-                    company: "Soliaris",
-                    value: "$24k",
-                    status: "Proposal",
-                  },
-                  {
-                    name: "David Smith",
-                    company: "Blue Water",
-                    value: "$4k",
-                    status: "Initial Contact",
-                  },
-                ].map((lead, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      paddingBottom: "16px",
-                      borderBottom:
-                        i !== 3 ? "1px solid var(--border)" : "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "10px",
-                        backgroundColor: "var(--avatar-bg)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      {lead.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                        {lead.name}
-                      </div>
-                      <div
-                        style={{ fontSize: "12px", color: "var(--text-muted)" }}
-                      >
-                        {lead.company}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                        {lead.value}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          color: "var(--primary)",
-                          backgroundColor: "var(--icon-bg)",
-                          padding: "2px 6px",
-                          borderRadius: "4px",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {lead.status}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* HRMS Stats */}
+      {(hasModuleAccess(access, "hrms") || hasModuleAccess(access, "employees")) && (
+        <div style={{ marginBottom: "40px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>HRMS People Operations</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
+            <StatCard title="Total Headcount" value={hrmsStats?.totalEmployees || 0} trend="Active staff roster" icon={<Users2 size={24} />} isPositive={true} />
+            <StatCard title="Attendance Rate" value={hrmsStats?.attendanceRate || "0%"} trend="Staff present today" icon={<Clock3 size={24} />} isPositive={true} />
+            <StatCard title="Pending Leaves" value={hrmsStats?.pendingLeaves || 0} trend="Urgent approvals needed" icon={<CalendarCheck2 size={24} />} isPositive={false} />
+            <StatCard title="Payroll Readiness" value={hrmsStats?.payrollReady || "0%"} trend="Salary templates set" icon={<Wallet2 size={24} />} isPositive={true} />
           </div>
+        </div>
+      )}
 
-          <div
-            className="responsive-grid-2"
-            style={{
-              marginTop: "24px",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            <div className="glass-card" style={{ padding: "24px" }}>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "700",
-                  marginBottom: "16px",
-                }}
-              >
-                HRMS Next Actions
-              </h3>
-              <div style={{ display: "grid", gap: "12px" }}>
-                {[
-                  "Finalize employee master and reporting hierarchy",
-                  "Publish shift and holiday calendar for the month",
-                  "Approve pending leave requests before payroll lock",
-                  "Run payroll structure validation and compliance checks",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    style={{
-                      padding: "12px 14px",
-                      borderRadius: "10px",
-                      backgroundColor: "var(--column-bg)",
-                      border: "1px solid var(--border)",
-                      fontSize: "13px",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ padding: "24px" }}>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "700",
-                  marginBottom: "16px",
-                }}
-              >
-                Module Coverage
-              </h3>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                {[
-                  { label: "CRM", value: "Leads, pipeline, follow-ups" },
-                  { label: "ERP", value: "Organization, assets, approvals" },
-                  {
-                    label: "HRMS",
-                    value: "Employees, attendance, leave, payroll",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                      padding: "12px 14px",
-                      borderRadius: "10px",
-                      backgroundColor: "var(--column-bg)",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    <div style={{ fontWeight: "700" }}>{item.label}</div>
-                    <div
-                      style={{
-                        color: "var(--text-muted)",
-                        textAlign: "right",
-                        fontSize: "13px",
-                      }}
-                    >
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* Dashboard Visuals */}
+      <div className="responsive-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+        <div className="glass-card" style={{ padding: "24px", minHeight: "350px" }}>
+          <h3 style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>Revenue Flow</h3>
+          <div style={{ height: "220px", width: "100%", display: "flex", alignItems: "flex-end", gap: "12px", paddingBottom: "20px" }}>
+            {[40, 60, 45, 90, 65, 80, 55, 100, 75, 85].map((h, i) => (
+              <motion.div
+                key={i}
+                initial={{ height: 0 }}
+                animate={{ height: `${h}%` }}
+                transition={{ delay: i * 0.1, duration: 1 }}
+                style={{ flex: 1, background: "linear-gradient(to top, var(--primary), #8b5cf6)", borderRadius: "6px 6px 0 0", opacity: 0.8 }}
+              />
+            ))}
           </div>
-        </>
-      ) : null}
+          <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
+            <span>Q1 Trend</span><span>Q2 Outlook</span><span>Q3 Estimate</span>
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <h3 style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>Recent Lead Activity</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {recentLeads.length === 0 ? (
+              <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>No recent activity to show.</div>
+            ) : (
+              recentLeads.map((lead, i) => (
+                <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "16px", borderBottom: i !== recentLeads.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold", color: "white" }}>
+                    {lead.name[0]}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "14px", fontWeight: "600" }}>{lead.name}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{lead.company || "Individual"}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "14px", fontWeight: "600" }}>${lead.value?.toLocaleString() || 0}</div>
+                    <div style={{ fontSize: "10px", color: "#10b981", fontWeight: "700" }}>{lead.status}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };

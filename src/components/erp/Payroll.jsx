@@ -21,6 +21,7 @@ import {
 
 const Payroll = () => {
   const [activeTab, setActiveTab] = useState("summary");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const tabNavRef = useRef(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
@@ -391,6 +392,11 @@ const Payroll = () => {
                 </div>
                 <button
                   className="btn-primary"
+                  disabled={submitting}
+                  onClick={() => {
+                    setSubmitting(true);
+                    setTimeout(() => setSubmitting(false), 2000); // Simulate action
+                  }}
                   style={{
                     width: "100%",
                     marginTop: "20px",
@@ -400,7 +406,7 @@ const Payroll = () => {
                     gap: "8px",
                   }}
                 >
-                  Generate Bulk Payslips
+                  {submitting ? <Loader size={16} className="spinner" /> : "Generate Bulk Payslips"}
                 </button>
               </div>
             </div>
