@@ -55,9 +55,9 @@ const TabContent = ({ title, children, showAdd = true }) => (
   </motion.div>
 );
 
-const HRMS = () => {
+const HRMS = ({ initialTab = "overview" }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const tabNavRef = useRef(null);
   const dragStateRef = useRef({ isDragging: false, startX: 0, scrollLeft: 0 });
 

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Navigate } from "react-router-dom";
 import { fetchUserProfile } from "../../store/auth/authSlice";
+import { hasModuleAccess } from "../../utils/access";
 
 /**
  * ProtectedRoute Component
@@ -10,10 +11,15 @@ import { fetchUserProfile } from "../../store/auth/authSlice";
  *
  * @param {React.Component} Component - The component to render if authenticated
  * @param {Array} requiredRoles - Optional array of roles required to access this route
+ * @param {Array} requiredModules - Optional array of dashboard modules required for access
  * @returns {React.Component}
  */
 // eslint-disable-next-line no-unused-vars
-const ProtectedRoute = ({ Component, requiredRoles = [] }) => {
+const ProtectedRoute = ({
+  Component,
+  requiredRoles = [],
+  requiredModules = [],
+}) => {
   const dispatch = useDispatch();
   const { isAuthenticated, accessToken, loading, user } = useSelector(
     (state) => state.auth,
@@ -82,6 +88,37 @@ const ProtectedRoute = ({ Component, requiredRoles = [] }) => {
           >
             <h1>Access Denied</h1>
             <p>You don't have permission to access this page.</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  if (requiredModules.length > 0 && user) {
+    const access = user.access || {};
+    const hasRequiredModule = requiredModules.some((moduleKey) =>
+      hasModuleAccess(access, moduleKey),
+    );
+
+    if (!hasRequiredModule) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "100vh",
+            backgroundColor: "var(--bg-dark)",
+          }}
+        >
+          <div
+            style={{
+              textAlign: "center",
+              color: "#ef4444",
+            }}
+          >
+            <h1>Access Denied</h1>
+            <p>You don't have permission to access this module.</p>
           </div>
         </div>
       );

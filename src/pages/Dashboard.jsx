@@ -1,5 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import {
   TrendingUp,
   Users,
@@ -12,6 +14,11 @@ import {
   Clock3,
   Wallet2,
 } from "lucide-react";
+import {
+  DASHBOARD_MODULES,
+  getAccessibleModules,
+  hasModuleAccess,
+} from "../utils/access";
 
 const StatCard = ({ title, value, change, icon, isPositive }) => (
   <motion.div
@@ -68,6 +75,10 @@ const StatCard = ({ title, value, change, icon, isPositive }) => (
 );
 
 const Dashboard = () => {
+  const { user } = useSelector((state) => state.auth);
+  const access = user?.access;
+  const accessibleModules = getAccessibleModules(access);
+
   const stats = [
     {
       title: "Total Leads",
@@ -143,310 +154,397 @@ const Dashboard = () => {
           Executive Dashboard
         </h1>
         <p style={{ color: "var(--text-muted)" }}>
-          Welcome back, John. Here's what's happening today.
+          Welcome back, {user?.fullName || "there"}. Here is what your role can
+          access today.
         </p>
       </header>
 
       <div
+        className="glass-card"
         style={{
+          padding: "16px 20px",
+          marginBottom: "24px",
           display: "flex",
           flexWrap: "wrap",
-          gap: "24px",
-          marginBottom: "32px",
+          gap: "10px",
+          alignItems: "center",
         }}
       >
-        {stats.map((stat, i) => (
-          <StatCard key={i} {...stat} style={{ minWidth: "200px" }} />
-        ))}
+        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+          Assigned modules:
+        </span>
+        {accessibleModules.length ? (
+          accessibleModules.map((moduleKey) => {
+            const module = DASHBOARD_MODULES.find(
+              (item) => item.key === moduleKey,
+            );
+            return (
+              <Link
+                key={moduleKey}
+                to={module?.route || "/"}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--tag-bg)",
+                  color: "var(--text-main)",
+                  fontSize: "12px",
+                  textDecoration: "none",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {module?.label || moduleKey}
+              </Link>
+            );
+          })
+        ) : (
+          <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+            No dashboard modules assigned yet.
+          </span>
+        )}
       </div>
 
-      <div style={{ marginBottom: "32px" }}>
+      {hasModuleAccess(access, "leads") ||
+      hasModuleAccess(access, "pipeline") ? (
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "end",
-            marginBottom: "16px",
-            gap: "12px",
             flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <h2
-              style={{
-                fontSize: "18px",
-                fontWeight: "700",
-                marginBottom: "4px",
-              }}
-            >
-              HRMS Snapshot
-            </h2>
-            <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-              Core people operations aligned with the enterprise blueprint.
-            </p>
-          </div>
-          <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
-            Employee master · attendance · leave · payroll
-          </div>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "24px",
+            marginBottom: "32px",
           }}
         >
-          {hrmsStats.map((stat, i) => (
-            <StatCard key={i} {...stat} />
+          {stats.map((stat, i) => (
+            <StatCard key={i} {...stat} style={{ minWidth: "200px" }} />
           ))}
         </div>
-      </div>
+      ) : null}
 
-      <div
-        className="responsive-grid-2"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "24px",
-        }}
-      >
-        <div
-          className="glass-card"
-          style={{ padding: "24px", height: "400px", position: "relative" }}
-        >
-          <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
-            Revenue Performance
-          </h3>
-          <div
-            style={{
-              height: "280px",
-              width: "100%",
-              display: "flex",
-              alignItems: "flex-end",
-              gap: "12px",
-              paddingBottom: "20px",
-            }}
-          >
-            {[40, 60, 45, 90, 65, 80, 55, 100, 75, 85].map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ height: 0 }}
-                animate={{ height: `${h}%` }}
-                transition={{ delay: i * 0.1, duration: 1 }}
-                style={{
-                  flex: 1,
-                  background:
-                    "linear-gradient(to top, var(--primary), #8b5cf6)",
-                  borderRadius: "6px 6px 0 0",
-                  opacity: 0.8,
-                }}
-              />
-            ))}
-          </div>
+      {hasModuleAccess(access, "hrms") ||
+      hasModuleAccess(access, "leave") ||
+      hasModuleAccess(access, "employees") ? (
+        <div style={{ marginBottom: "32px" }}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              color: "var(--text-muted)",
-              fontSize: "12px",
-              paddingTop: "12px",
-              borderTop: "1px solid var(--border)",
+              alignItems: "end",
+              marginBottom: "16px",
+              gap: "12px",
+              flexWrap: "wrap",
             }}
           >
-            <span>Jan</span>
-            <span>Feb</span>
-            <span>Mar</span>
-            <span>Apr</span>
-            <span>May</span>
-            <span>Jun</span>
-            <span>Jul</span>
-            <span>Aug</span>
-            <span>Sep</span>
-            <span>Oct</span>
+            <div>
+              <h2
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "700",
+                  marginBottom: "4px",
+                }}
+              >
+                HRMS Snapshot
+              </h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+                Core people operations aligned with the enterprise blueprint.
+              </p>
+            </div>
+            <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+              {accessibleModules.includes("employees")
+                ? "Employee master · "
+                : ""}
+              {accessibleModules.includes("hrms") ? "attendance · " : ""}
+              {accessibleModules.includes("leave") ? "leave · " : ""}
+              {accessibleModules.includes("payroll") ? "payroll" : ""}
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {hrmsStats
+              .filter((stat) => {
+                if (stat.title === "Employee Headcount")
+                  return hasModuleAccess(access, "employees");
+                if (stat.title === "Attendance Rate")
+                  return hasModuleAccess(access, "hrms");
+                if (stat.title === "Pending Leaves")
+                  return hasModuleAccess(access, "leave");
+                if (stat.title === "Payroll Readiness")
+                  return hasModuleAccess(access, "payroll");
+                return false;
+              })
+              .map((stat, i) => (
+                <StatCard key={i} {...stat} />
+              ))}
           </div>
         </div>
+      ) : null}
 
-        <div className="glass-card" style={{ padding: "24px" }}>
-          <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
-            Recent Leads
-          </h3>
+      {hasModuleAccess(access, "dashboard") ? (
+        <>
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            className="responsive-grid-2"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "24px",
+            }}
           >
-            {[
-              {
-                name: "Sarah Wilson",
-                company: "TechFlow",
-                value: "$12k",
-                status: "Negotiation",
-              },
-              {
-                name: "Marcus Chen",
-                company: "Nova Labs",
-                value: "$8.5k",
-                status: "Discovery",
-              },
-              {
-                name: "Elena Rodriguez",
-                company: "Soliaris",
-                value: "$24k",
-                status: "Proposal",
-              },
-              {
-                name: "David Smith",
-                company: "Blue Water",
-                value: "$4k",
-                status: "Initial Contact",
-              },
-            ].map((lead, i) => (
+            <div
+              className="glass-card"
+              style={{ padding: "24px", height: "400px", position: "relative" }}
+            >
+              <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
+                Revenue Performance
+              </h3>
               <div
-                key={i}
                 style={{
+                  height: "280px",
+                  width: "100%",
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "flex-end",
                   gap: "12px",
-                  paddingBottom: "16px",
-                  borderBottom: i !== 3 ? "1px solid var(--border)" : "none",
+                  paddingBottom: "20px",
                 }}
               >
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "10px",
-                    backgroundColor: "var(--avatar-bg)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  {lead.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {lead.name}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                    {lead.company}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                    {lead.value}
-                  </div>
-                  <div
+                {[40, 60, 45, 90, 65, 80, 55, 100, 75, 85].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${h}%` }}
+                    transition={{ delay: i * 0.1, duration: 1 }}
                     style={{
-                      fontSize: "10px",
-                      color: "var(--primary)",
-                      backgroundColor: "var(--icon-bg)",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      marginTop: "2px",
+                      flex: 1,
+                      background:
+                        "linear-gradient(to top, var(--primary), #8b5cf6)",
+                      borderRadius: "6px 6px 0 0",
+                      opacity: 0.8,
                     }}
-                  >
-                    {lead.status}
-                  </div>
-                </div>
+                  />
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="responsive-grid-2"
-        style={{
-          marginTop: "24px",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "24px",
-        }}
-      >
-        <div className="glass-card" style={{ padding: "24px" }}>
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              marginBottom: "16px",
-            }}
-          >
-            HRMS Next Actions
-          </h3>
-          <div style={{ display: "grid", gap: "12px" }}>
-            {[
-              "Finalize employee master and reporting hierarchy",
-              "Publish shift and holiday calendar for the month",
-              "Approve pending leave requests before payroll lock",
-              "Run payroll structure validation and compliance checks",
-            ].map((item) => (
               <div
-                key={item}
-                style={{
-                  padding: "12px 14px",
-                  borderRadius: "10px",
-                  backgroundColor: "var(--column-bg)",
-                  border: "1px solid var(--border)",
-                  fontSize: "13px",
-                  color: "var(--text-main)",
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: "24px" }}>
-          <h3
-            style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              marginBottom: "16px",
-            }}
-          >
-            Module Coverage
-          </h3>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            {[
-              { label: "CRM", value: "Leads, pipeline, follow-ups" },
-              { label: "ERP", value: "Organization, assets, approvals" },
-              { label: "HRMS", value: "Employees, attendance, leave, payroll" },
-            ].map((item) => (
-              <div
-                key={item.label}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  gap: "16px",
-                  padding: "12px 14px",
-                  borderRadius: "10px",
-                  backgroundColor: "var(--column-bg)",
-                  border: "1px solid var(--border)",
+                  color: "var(--text-muted)",
+                  fontSize: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--border)",
                 }}
               >
-                <div style={{ fontWeight: "700" }}>{item.label}</div>
-                <div
-                  style={{
-                    color: "var(--text-muted)",
-                    textAlign: "right",
-                    fontSize: "13px",
-                  }}
-                >
-                  {item.value}
-                </div>
+                <span>Jan</span>
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
+                <span>Jun</span>
+                <span>Jul</span>
+                <span>Aug</span>
+                <span>Sep</span>
+                <span>Oct</span>
               </div>
-            ))}
+            </div>
+
+            <div className="glass-card" style={{ padding: "24px" }}>
+              <h3 style={{ marginBottom: "20px", fontSize: "18px" }}>
+                Recent Leads
+              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {[
+                  {
+                    name: "Sarah Wilson",
+                    company: "TechFlow",
+                    value: "$12k",
+                    status: "Negotiation",
+                  },
+                  {
+                    name: "Marcus Chen",
+                    company: "Nova Labs",
+                    value: "$8.5k",
+                    status: "Discovery",
+                  },
+                  {
+                    name: "Elena Rodriguez",
+                    company: "Soliaris",
+                    value: "$24k",
+                    status: "Proposal",
+                  },
+                  {
+                    name: "David Smith",
+                    company: "Blue Water",
+                    value: "$4k",
+                    status: "Initial Contact",
+                  },
+                ].map((lead, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      paddingBottom: "16px",
+                      borderBottom:
+                        i !== 3 ? "1px solid var(--border)" : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "10px",
+                        backgroundColor: "var(--avatar-bg)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      {lead.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600" }}>
+                        {lead.name}
+                      </div>
+                      <div
+                        style={{ fontSize: "12px", color: "var(--text-muted)" }}
+                      >
+                        {lead.company}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600" }}>
+                        {lead.value}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          color: "var(--primary)",
+                          backgroundColor: "var(--icon-bg)",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {lead.status}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+
+          <div
+            className="responsive-grid-2"
+            style={{
+              marginTop: "24px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            <div className="glass-card" style={{ padding: "24px" }}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "700",
+                  marginBottom: "16px",
+                }}
+              >
+                HRMS Next Actions
+              </h3>
+              <div style={{ display: "grid", gap: "12px" }}>
+                {[
+                  "Finalize employee master and reporting hierarchy",
+                  "Publish shift and holiday calendar for the month",
+                  "Approve pending leave requests before payroll lock",
+                  "Run payroll structure validation and compliance checks",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--column-bg)",
+                      border: "1px solid var(--border)",
+                      fontSize: "13px",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: "24px" }}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "700",
+                  marginBottom: "16px",
+                }}
+              >
+                Module Coverage
+              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                {[
+                  { label: "CRM", value: "Leads, pipeline, follow-ups" },
+                  { label: "ERP", value: "Organization, assets, approvals" },
+                  {
+                    label: "HRMS",
+                    value: "Employees, attendance, leave, payroll",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      padding: "12px 14px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--column-bg)",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <div style={{ fontWeight: "700" }}>{item.label}</div>
+                    <div
+                      style={{
+                        color: "var(--text-muted)",
+                        textAlign: "right",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </motion.div>
   );
 };

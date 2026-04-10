@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -16,9 +17,11 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { hasModuleAccess } from "../../utils/access";
 
 const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const syncSidebarMode = () => {
@@ -34,26 +37,79 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
   }, []);
 
   const menuItems = [
-    { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
-    { title: "Leads", icon: <Users size={20} />, path: "/leads" },
-    { title: "Pipeline", icon: <Briefcase size={20} />, path: "/pipeline" },
-    { title: "Recruitment", icon: <Users size={20} />, path: "/recruitment" },
+    {
+      title: "Dashboard",
+      icon: <LayoutDashboard size={20} />,
+      path: "/",
+      module: "dashboard",
+    },
+    {
+      title: "Leads",
+      icon: <Users size={20} />,
+      path: "/leads",
+      module: "leads",
+    },
+    {
+      title: "Pipeline",
+      icon: <Briefcase size={20} />,
+      path: "/pipeline",
+      module: "pipeline",
+    },
+    {
+      title: "Recruitment",
+      icon: <Users size={20} />,
+      path: "/recruitment",
+      module: "recruitment",
+    },
     {
       title: "Grievances",
       icon: <ShieldAlert size={20} />,
       path: "/grievances",
+      module: "grievances",
     },
-    { title: "Payroll", icon: <Wallet size={20} />, path: "/payroll" },
-    { title: "ERP Portal", icon: <Package size={20} />, path: "/erp" },
-    { title: "HRMS", icon: <BadgeCheck size={20} />, path: "/hrms" },
-    { title: "Leave", icon: <CalendarDays size={20} />, path: "/leave" },
+    {
+      title: "Payroll",
+      icon: <Wallet size={20} />,
+      path: "/payroll",
+      module: "payroll",
+    },
+    {
+      title: "ERP Portal",
+      icon: <Package size={20} />,
+      path: "/erp",
+      module: "erp",
+    },
+    {
+      title: "HRMS",
+      icon: <BadgeCheck size={20} />,
+      path: "/hrms",
+      module: "hrms",
+    },
+    {
+      title: "Employees",
+      icon: <Users size={20} />,
+      path: "/employees",
+      module: "employees",
+    },
+    {
+      title: "Leave",
+      icon: <CalendarDays size={20} />,
+      path: "/leave",
+      module: "leave",
+    },
     {
       title: "Roles & Access",
       icon: <ShieldAlert size={20} />,
       path: "/roles-access",
+      module: "roles-access",
     },
-    { title: "Settings", icon: <Settings size={20} />, path: "/settings" },
-  ];
+    {
+      title: "Settings",
+      icon: <Settings size={20} />,
+      path: "/settings",
+      module: "settings",
+    },
+  ].filter((item) => hasModuleAccess(user?.access, item.module));
 
   return (
     <motion.aside
@@ -176,16 +232,16 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
             color: "var(--text-main)",
           }}
         >
-          JD
+          {(user?.fullName || "User").slice(0, 2).toUpperCase()}
         </div>
         {!isCollapsed && (
           <>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "14px", fontWeight: "600" }}>
-                John Doe
+                {user?.fullName || "User"}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Admin
+                {user?.roles?.[0] || "Member"}
               </div>
             </div>
             <button

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import apiClient from "../api/apiClient";
 import { fetchUserProfile } from "../store/auth/authSlice";
+import { DASHBOARD_MODULES, getModuleLabel } from "../utils/access";
 
 const getErrorMessage = (error) => {
   if (!error) return "Something went wrong";
@@ -24,9 +25,12 @@ const getErrorMessage = (error) => {
 
 const RolesAccess = () => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, accessToken, loading: authLoading } = useSelector(
-    (state) => state.auth,
-  );
+  const {
+    user,
+    isAuthenticated,
+    accessToken,
+    loading: authLoading,
+  } = useSelector((state) => state.auth);
 
   const [rbacUsers, setRbacUsers] = useState([]);
   const [rbacRoles, setRbacRoles] = useState([]);
@@ -34,12 +38,14 @@ const RolesAccess = () => {
   const [openRolePickerUserId, setOpenRolePickerUserId] = useState(null);
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDescription, setNewRoleDescription] = useState("");
+  const [newRoleModules, setNewRoleModules] = useState([]);
   const [createRoleLoading, setCreateRoleLoading] = useState(false);
   const [deleteRoleLoadingById, setDeleteRoleLoadingById] = useState({});
   const [updateRoleLoadingById, setUpdateRoleLoadingById] = useState({});
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [editingRoleName, setEditingRoleName] = useState("");
   const [editingRoleDescription, setEditingRoleDescription] = useState("");
+  const [editingRoleModules, setEditingRoleModules] = useState([]);
   const [rbacLoading, setRbacLoading] = useState(false);
   const [assignLoadingByUser, setAssignLoadingByUser] = useState({});
   const [rbacError, setRbacError] = useState(null);
@@ -54,10 +60,9 @@ const RolesAccess = () => {
     }
 
     setIsProfileBootstrapping(true);
-    dispatch(fetchUserProfile())
-      .finally(() => {
-        setIsProfileBootstrapping(false);
-      });
+    dispatch(fetchUserProfile()).finally(() => {
+      setIsProfileBootstrapping(false);
+    });
   }, [dispatch, isAuthenticated, accessToken, user]);
 
   const userAccessLabel = useMemo(() => {
@@ -79,6 +84,14 @@ const RolesAccess = () => {
       return found?.name || roleName;
     };
   }, [selectedRoles, rbacRoles]);
+
+  const roleModulesLabel = useMemo(() => {
+    return (role) => {
+      const modules = role?.dashboardModules || [];
+      if (!modules.length) return "No modules assigned";
+      return modules.map((moduleKey) => getModuleLabel(moduleKey)).join(" · ");
+    };
+  }, []);
 
   const loadRbacData = async () => {
     if (!canManageRbac) return;
@@ -186,11 +199,15 @@ const RolesAccess = () => {
       await apiClient.post("/rbac/roles", {
         name: newRoleName.trim(),
         description: newRoleDescription.trim() || undefined,
+        dashboardModules: newRoleModules,
       });
 
-      setRbacSuccess(`Role ${newRoleName.trim().toUpperCase()} created successfully.`);
+      setRbacSuccess(
+        `Role ${newRoleName.trim().toUpperCase()} created successfully.`,
+      );
       setNewRoleName("");
       setNewRoleDescription("");
+      setNewRoleModules([]);
       await loadRbacData();
     } catch (createRoleError) {
       setRbacError(getErrorMessage(createRoleError));
@@ -203,6 +220,7 @@ const RolesAccess = () => {
     setEditingRoleId(role.id);
     setEditingRoleName(role.name || "");
     setEditingRoleDescription(role.description || "");
+    setEditingRoleModules(role.dashboardModules || []);
     setRbacError(null);
     setRbacSuccess(null);
   };
@@ -211,6 +229,7 @@ const RolesAccess = () => {
     setEditingRoleId(null);
     setEditingRoleName("");
     setEditingRoleDescription("");
+    setEditingRoleModules([]);
   };
 
   const handleUpdateRole = async (roleId) => {
@@ -227,9 +246,12 @@ const RolesAccess = () => {
       await apiClient.patch(`/rbac/roles/${roleId}`, {
         name: editingRoleName.trim(),
         description: editingRoleDescription.trim(),
+        dashboardModules: editingRoleModules,
       });
 
-      setRbacSuccess(`Role ${editingRoleName.trim().toUpperCase()} updated successfully.`);
+      setRbacSuccess(
+        `Role ${editingRoleName.trim().toUpperCase()} updated successfully.`,
+      );
       cancelEditRole();
       await loadRbacData();
     } catch (updateRoleError) {
@@ -297,7 +319,9 @@ const RolesAccess = () => {
       style={{ maxWidth: "980px", margin: "0 auto", width: "100%" }}
     >
       <header style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}>
+        <h1
+          style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}
+        >
           Roles & Access
         </h1>
         <p style={{ color: "var(--text-muted)" }}>
@@ -313,7 +337,9 @@ const RolesAccess = () => {
             paddingBottom: "16px",
           }}
         >
-          <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "10px" }}>
+          <h2
+            style={{ fontSize: "16px", fontWeight: 700, marginBottom: "10px" }}
+          >
             Create New Role
           </h2>
           <div
@@ -377,6 +403,58 @@ const RolesAccess = () => {
               {createRoleLoading ? "Creating..." : "Create Role"}
             </button>
           </div>
+          <div style={{ marginTop: "14px" }}>
+            <div
+              style={{
+                fontSize: "13px",
+                color: "var(--text-muted)",
+                marginBottom: "8px",
+              }}
+            >
+              Dashboard modules for this role
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "8px",
+              }}
+            >
+              {DASHBOARD_MODULES.map((module) => {
+                const checked = newRoleModules.includes(module.key);
+                return (
+                  <label
+                    key={module.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                      backgroundColor: checked
+                        ? "rgba(124, 58, 237, 0.12)"
+                        : "var(--input-bg)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        setNewRoleModules((prev) =>
+                          event.target.checked
+                            ? [...prev, module.key]
+                            : prev.filter((value) => value !== module.key),
+                        );
+                      }}
+                    />
+                    <span style={{ fontSize: "13px" }}>{module.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div
@@ -386,13 +464,16 @@ const RolesAccess = () => {
             paddingBottom: "16px",
           }}
         >
-          <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "10px" }}>
+          <h2
+            style={{ fontSize: "16px", fontWeight: 700, marginBottom: "10px" }}
+          >
             Existing Roles
           </h2>
           <div style={{ display: "grid", gap: "8px" }}>
             {rbacRoles.map((role) => {
               const isEditing = editingRoleId === role.id;
-              const isDeleteDisabled = role.isSystem || role.assignedUsersCount > 0;
+              const isDeleteDisabled =
+                role.isSystem || role.assignedUsersCount > 0;
 
               return (
                 <div
@@ -416,19 +497,39 @@ const RolesAccess = () => {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: "14px" }}>{role.name}</div>
-                        <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+                        <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                          {role.name}
+                        </div>
+                        <div
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "12px",
+                          }}
+                        >
                           {role.description || "No description"}
                         </div>
-                        <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
-                          {role.assignedUsersCount} assigned · {role.isSystem ? "System role" : "Custom role"}
+                        <div
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {role.assignedUsersCount} assigned ·{" "}
+                          {role.isSystem ? "System role" : "Custom role"}
+                        </div>
+                        <div
+                          style={{
+                            color: "var(--text-muted)",
+                            fontSize: "12px",
+                          }}
+                        >
+                          Modules: {roleModulesLabel(role)}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
                           type="button"
                           onClick={() => startEditRole(role)}
-                          disabled={role.isSystem}
                           style={{
                             backgroundColor: "var(--input-bg)",
                             border: "1px solid var(--border)",
@@ -439,8 +540,7 @@ const RolesAccess = () => {
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
-                            cursor: role.isSystem ? "not-allowed" : "pointer",
-                            opacity: role.isSystem ? 0.6 : 1,
+                            cursor: "pointer",
                           }}
                         >
                           <Pencil size={12} />
@@ -449,7 +549,9 @@ const RolesAccess = () => {
                         <button
                           type="button"
                           onClick={() => handleDeleteRole(role)}
-                          disabled={isDeleteDisabled || !!deleteRoleLoadingById[role.id]}
+                          disabled={
+                            isDeleteDisabled || !!deleteRoleLoadingById[role.id]
+                          }
                           style={{
                             backgroundColor: "rgba(239, 68, 68, 0.12)",
                             border: "1px solid rgba(239, 68, 68, 0.4)",
@@ -460,12 +562,16 @@ const RolesAccess = () => {
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
-                            cursor: isDeleteDisabled ? "not-allowed" : "pointer",
+                            cursor: isDeleteDisabled
+                              ? "not-allowed"
+                              : "pointer",
                             opacity: isDeleteDisabled ? 0.6 : 1,
                           }}
                         >
                           <Trash2 size={12} />
-                          {deleteRoleLoadingById[role.id] ? "Deleting..." : "Delete"}
+                          {deleteRoleLoadingById[role.id]
+                            ? "Deleting..."
+                            : "Delete"}
                         </button>
                       </div>
                     </div>
@@ -474,7 +580,10 @@ const RolesAccess = () => {
                       <input
                         type="text"
                         value={editingRoleName}
-                        onChange={(event) => setEditingRoleName(event.target.value)}
+                        disabled={role.isSystem}
+                        onChange={(event) =>
+                          setEditingRoleName(event.target.value)
+                        }
                         style={{
                           backgroundColor: "var(--input-bg)",
                           border: "1px solid var(--border)",
@@ -499,6 +608,59 @@ const RolesAccess = () => {
                           fontSize: "13px",
                         }}
                       />
+                      <div
+                        style={{ fontSize: "13px", color: "var(--text-muted)" }}
+                      >
+                        Dashboard modules
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(180px, 1fr))",
+                          gap: "8px",
+                        }}
+                      >
+                        {DASHBOARD_MODULES.map((module) => {
+                          const checked = editingRoleModules.includes(
+                            module.key,
+                          );
+                          return (
+                            <label
+                              key={module.key}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "10px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid var(--border)",
+                                backgroundColor: checked
+                                  ? "rgba(124, 58, 237, 0.12)"
+                                  : "var(--input-bg)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(event) => {
+                                  setEditingRoleModules((prev) =>
+                                    event.target.checked
+                                      ? [...prev, module.key]
+                                      : prev.filter(
+                                          (value) => value !== module.key,
+                                        ),
+                                  );
+                                }}
+                              />
+                              <span style={{ fontSize: "13px" }}>
+                                {module.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
                           type="button"
@@ -518,7 +680,9 @@ const RolesAccess = () => {
                             opacity: updateRoleLoadingById[role.id] ? 0.7 : 1,
                           }}
                         >
-                          {updateRoleLoadingById[role.id] ? "Saving..." : "Save"}
+                          {updateRoleLoadingById[role.id]
+                            ? "Saving..."
+                            : "Save"}
                         </button>
                         <button
                           type="button"
@@ -621,19 +785,41 @@ const RolesAccess = () => {
                 >
                   <div>
                     <div style={{ fontWeight: 600 }}>{rbacUser.fullName}</div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                    <div
+                      style={{ color: "var(--text-muted)", fontSize: "13px" }}
+                    >
                       {rbacUser.email}
                     </div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "12px", marginTop: "3px" }}>
-                      Roles: {rbacUser.roles?.length ? rbacUser.roles.join(", ") : "No roles"}
+                    <div
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "12px",
+                        marginTop: "3px",
+                      }}
+                    >
+                      Roles:{" "}
+                      {rbacUser.roles?.length
+                        ? rbacUser.roles.join(", ")
+                        : "No roles"}
                     </div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+                    <div
+                      style={{ color: "var(--text-muted)", fontSize: "12px" }}
+                    >
                       Access: {userAccessLabel(rbacUser)}
                     </div>
                   </div>
 
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <div style={{ position: "relative" }} data-role-picker="true">
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{ position: "relative" }}
+                      data-role-picker="true"
+                    >
                       <button
                         type="button"
                         onClick={() =>
@@ -656,7 +842,13 @@ const RolesAccess = () => {
                           cursor: "pointer",
                         }}
                       >
-                        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
                           <Shield size={14} color="var(--text-muted)" />
                           <span>{selectedRoleLabel(rbacUser.id)}</span>
                         </span>
@@ -681,7 +873,8 @@ const RolesAccess = () => {
                           }}
                         >
                           {rbacRoles.map((role) => {
-                            const isSelected = selectedRoles[rbacUser.id] === role.name;
+                            const isSelected =
+                              selectedRoles[rbacUser.id] === role.name;
                             return (
                               <button
                                 key={role.id}
@@ -700,7 +893,9 @@ const RolesAccess = () => {
                                   background: isSelected
                                     ? "var(--primary)"
                                     : "var(--bg-card)",
-                                  color: isSelected ? "white" : "var(--text-main)",
+                                  color: isSelected
+                                    ? "white"
+                                    : "var(--text-main)",
                                   padding: "10px 12px",
                                   fontSize: "13px",
                                   cursor: "pointer",
@@ -726,12 +921,16 @@ const RolesAccess = () => {
                         padding: "10px 14px",
                         fontSize: "13px",
                         fontWeight: 600,
-                        cursor: assignLoadingByUser[rbacUser.id] ? "not-allowed" : "pointer",
+                        cursor: assignLoadingByUser[rbacUser.id]
+                          ? "not-allowed"
+                          : "pointer",
                         opacity: assignLoadingByUser[rbacUser.id] ? 0.7 : 1,
                         height: "40px",
                       }}
                     >
-                      {assignLoadingByUser[rbacUser.id] ? "Assigning..." : "Assign Role"}
+                      {assignLoadingByUser[rbacUser.id]
+                        ? "Assigning..."
+                        : "Assign Role"}
                     </button>
                   </div>
                 </div>

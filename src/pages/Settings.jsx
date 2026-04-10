@@ -12,6 +12,7 @@ import {
   Loader,
 } from "lucide-react";
 import { fetchUserProfile, clearError } from "../store/auth/authSlice";
+import { getModuleLabel } from "../utils/access";
 
 const ReadOnlyField = ({ label, icon, value }) => (
   <div style={{ marginBottom: "16px" }}>
@@ -82,6 +83,13 @@ const Settings = () => {
     if (user.access.canManageRbac) permissions.push("Manage RBAC");
     if (user.access.canViewDashboard) permissions.push("View Dashboard");
     return permissions.length ? permissions.join(", ") : "No permissions";
+  }, [user]);
+
+  const dashboardModules = useMemo(() => {
+    const modules = user?.access?.dashboardModules || [];
+    return modules.length
+      ? modules.map((moduleKey) => getModuleLabel(moduleKey)).join(", ")
+      : "No dashboard modules assigned";
   }, [user]);
 
   const fullName = user?.fullName || "";
@@ -239,6 +247,11 @@ const Settings = () => {
               <ReadOnlyField
                 label="Access Permissions"
                 value={accessSummary}
+                icon={<Shield size={16} />}
+              />
+              <ReadOnlyField
+                label="Dashboard Modules"
+                value={dashboardModules}
                 icon={<Shield size={16} />}
               />
             </div>

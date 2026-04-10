@@ -38,6 +38,7 @@ const SEOHelper = () => {
  */
 function AppLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const EmployeesModule = () => <HRMS initialTab="employees" />;
 
   useKeyboardShortcuts([
     {
@@ -94,17 +95,102 @@ function AppLayout() {
           }}
         >
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/pipeline" element={<Leads />} />
-            <Route path="/erp" element={<ERP />} />
-            <Route path="/recruitment" element={<RecruitmentAssessment />} />
-            <Route path="/grievances" element={<GrievanceManagement />} />
-            <Route path="/payroll" element={<Payroll />} />
-            <Route path="/hrms" element={<HRMS />} />
-            <Route path="/leave" element={<Leave />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/roles-access" element={<RolesAccess />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute
+                  Component={Dashboard}
+                  requiredModules={["dashboard"]}
+                />
+              }
+            />
+            <Route
+              path="/leads"
+              element={
+                <ProtectedRoute Component={Leads} requiredModules={["leads"]} />
+              }
+            />
+            <Route
+              path="/pipeline"
+              element={
+                <ProtectedRoute
+                  Component={Leads}
+                  requiredModules={["pipeline"]}
+                />
+              }
+            />
+            <Route
+              path="/erp"
+              element={
+                <ProtectedRoute Component={ERP} requiredModules={["erp"]} />
+              }
+            />
+            <Route
+              path="/recruitment"
+              element={
+                <ProtectedRoute
+                  Component={RecruitmentAssessment}
+                  requiredModules={["recruitment"]}
+                />
+              }
+            />
+            <Route
+              path="/grievances"
+              element={
+                <ProtectedRoute
+                  Component={GrievanceManagement}
+                  requiredModules={["grievances"]}
+                />
+              }
+            />
+            <Route
+              path="/payroll"
+              element={
+                <ProtectedRoute
+                  Component={Payroll}
+                  requiredModules={["payroll"]}
+                />
+              }
+            />
+            <Route
+              path="/hrms"
+              element={
+                <ProtectedRoute Component={HRMS} requiredModules={["hrms"]} />
+              }
+            />
+            <Route
+              path="/employees"
+              element={
+                <ProtectedRoute
+                  Component={EmployeesModule}
+                  requiredModules={["employees"]}
+                />
+              }
+            />
+            <Route
+              path="/leave"
+              element={
+                <ProtectedRoute Component={Leave} requiredModules={["leave"]} />
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute
+                  Component={Settings}
+                  requiredModules={["settings"]}
+                />
+              }
+            />
+            <Route
+              path="/roles-access"
+              element={
+                <ProtectedRoute
+                  Component={RolesAccess}
+                  requiredModules={["roles-access"]}
+                />
+              }
+            />
           </Routes>
         </main>
       </div>
