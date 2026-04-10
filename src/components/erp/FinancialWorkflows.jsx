@@ -11,6 +11,7 @@ import {
   Loader,
   X,
   Target,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
@@ -82,9 +83,22 @@ const FinancialWorkflows = () => {
     setActionLoading(id);
     try {
       await apiClient.patch(`/finance/${id}`, { status });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error("Update failed", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteTransaction = async (id) => {
+    if (!window.confirm("Delete this financial record? This may affect your analytics and cash flow reports.")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/finance/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete record");
     } finally {
       setActionLoading(null);
     }
@@ -107,68 +121,83 @@ const FinancialWorkflows = () => {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Stats Summary */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
-        <div className="glass-card" style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="glass-card" style={{ 
+          padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center",
+          background: "linear-gradient(135deg, var(--bg-card), rgba(139, 92, 246, 0.1))",
+          border: "1px solid rgba(139, 92, 246, 0.2)"
+        }}>
           <div>
-            <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Outstanding Receivables</div>
-            <div style={{ fontSize: "24px", fontWeight: "800", color: "#8b5cf6" }}>${stats?.totalReceivables?.toLocaleString() || 0}</div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", textTransform: "uppercase", fontWeight: "700", letterSpacing: "0.05em" }}>Outstanding Receivables</div>
+            <div style={{ fontSize: "28px", fontWeight: "800", color: "#8b5cf6" }}>${stats?.totalReceivables?.toLocaleString() || 0}</div>
           </div>
-          <FileText size={32} style={{ opacity: 0.2 }} />
+          <div style={{ padding: "12px", backgroundColor: "rgba(139, 92, 246, 0.1)", borderRadius: "12px", color: "#8b5cf6" }}>
+            <FileText size={32} />
+          </div>
         </div>
-        <div className="glass-card" style={{ padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="glass-card" style={{ 
+          padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center",
+          background: "linear-gradient(135deg, var(--bg-card), rgba(14, 165, 233, 0.1))",
+          border: "1px solid rgba(14, 165, 233, 0.2)"
+        }}>
           <div>
-            <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Pending Payables</div>
-            <div style={{ fontSize: "24px", fontWeight: "800", color: "var(--primary)" }}>${stats?.totalPayables?.toLocaleString() || 0}</div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", textTransform: "uppercase", fontWeight: "700", letterSpacing: "0.05em" }}>Pending Payables</div>
+            <div style={{ fontSize: "28px", fontWeight: "800", color: "var(--primary)" }}>${stats?.totalPayables?.toLocaleString() || 0}</div>
           </div>
-          <ShoppingCart size={32} style={{ opacity: 0.2 }} />
+          <div style={{ padding: "12px", backgroundColor: "rgba(14, 165, 233, 0.1)", borderRadius: "12px", color: "var(--primary)" }}>
+            <ShoppingCart size={32} />
+          </div>
         </div>
       </div>
 
-      <div className="responsive-grid-2 erp-finance-switch" style={{ display: "grid", gap: "20px" }}>
+      <div className="erp-finance-switch" style={{ 
+        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", 
+        backgroundColor: "var(--border)", borderRadius: "16px", overflow: "hidden",
+        border: "1px solid var(--border)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+      }}>
         <button
           onClick={() => setView("purchases")}
-          className="glass-card"
           style={{
-            padding: "24px", textAlign: "left", transition: "all 0.2s",
-            border: view === "purchases" ? "1px solid var(--primary)" : "1px solid var(--border)",
-            backgroundColor: view === "purchases" ? "rgba(var(--primary-rgb), 0.05)" : "var(--bg-card)",
+            padding: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px",
+            backgroundColor: view === "purchases" ? "rgba(14, 165, 233, 0.15)" : "var(--bg-card)",
+            color: view === "purchases" ? "var(--primary)" : "var(--text-muted)",
+            transition: "all 0.3s ease", cursor: "pointer", border: "none"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-            <div style={{ padding: "8px", backgroundColor: "var(--primary)", borderRadius: "8px", color: "white" }}><ShoppingCart size={20} /></div>
-            <h4 style={{ fontSize: "16px", fontWeight: "600" }}>Purchase Orders</h4>
-          </div>
-          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>Manage procurement and vendor payments.</p>
+          <ShoppingCart size={20} />
+          <span style={{ fontWeight: "800", fontSize: "15px" }}>PURCHASE ORDERS</span>
+          {view === "purchases" && <motion.div layoutId="active-view" style={{ position: "absolute", bottom: "4px", width: "40px", height: "3px", backgroundColor: "var(--primary)", borderRadius: "2px" }} />}
         </button>
 
         <button
           onClick={() => setView("invoices")}
-          className="glass-card"
           style={{
-            padding: "24px", textAlign: "left", transition: "all 0.2s",
-            border: view === "invoices" ? "1px solid #8b5cf6" : "1px solid var(--border)",
-            backgroundColor: view === "invoices" ? "rgba(139, 92, 246, 0.05)" : "var(--bg-card)",
+            padding: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px",
+            backgroundColor: view === "invoices" ? "rgba(139, 92, 246, 0.15)" : "var(--bg-card)",
+            color: view === "invoices" ? "#8b5cf6" : "var(--text-muted)",
+            transition: "all 0.3s ease", cursor: "pointer", border: "none"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-            <div style={{ padding: "8px", backgroundColor: "#8b5cf6", borderRadius: "8px", color: "white" }}><FileText size={20} /></div>
-            <h4 style={{ fontSize: "16px", fontWeight: "600" }}>Sales Invoices</h4>
-          </div>
-          <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>Track client billing and receivables.</p>
+          <FileText size={20} />
+          <span style={{ fontWeight: "800", fontSize: "15px" }}>SALES INVOICES</span>
+          {view === "invoices" && <motion.div layoutId="active-view" style={{ position: "absolute", bottom: "4px", width: "40px", height: "3px", backgroundColor: "#8b5cf6", borderRadius: "2px" }} />}
         </button>
       </div>
 
-      <div className="glass-card" style={{ padding: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "18px", fontWeight: "800" }}>
-            Recent {view === "purchases" ? "Purchase Orders" : "Invoices"}
-          </h3>
-          <button onClick={() => setShowModal(true)} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Plus size={18} /> New {view === "purchases" ? "PO" : "Invoice"}
+      <div className="glass-card" style={{ padding: "24px", minHeight: "600px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+          <div>
+            <h3 style={{ fontSize: "20px", fontWeight: "800", color: "var(--text-main)" }}>
+              {view === "purchases" ? "Procurement Ledger" : "Revenue Ledger"}
+            </h3>
+            <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Tracking {transactions.length} active financial instruments</p>
+          </div>
+          <button onClick={() => setShowModal(true)} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 24px" }}>
+            <Plus size={20} /> New {view === "purchases" ? "PO" : "Invoice"}
           </button>
         </div>
 
         {loading ? (
-          <div style={{ height: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={32} /></div>
+          <div style={{ height: "300px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={40} /></div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {transactions.map((item) => (
@@ -177,40 +206,56 @@ const FinancialWorkflows = () => {
                 key={item.id}
                 className="erp-finance-row"
                 style={{
-                  padding: "16px", backgroundColor: "var(--tag-bg)",
-                  borderRadius: "12px", display: "flex", alignItems: "center",
-                  gap: "20px", border: "1px solid var(--border)"
+                  padding: "18px 24px", backgroundColor: "rgba(255,255,255,0.02)",
+                  borderRadius: "14px", display: "flex", alignItems: "center",
+                  gap: "24px", border: "1px solid var(--border)",
+                  transition: "background-color 0.2s"
                 }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)"}
               >
                 <div style={{ 
-                  width: "40px", height: "40px", borderRadius: "10px", 
+                  width: "48px", height: "48px", borderRadius: "12px", 
                   backgroundColor: "var(--input-bg)", display: "flex", 
                   alignItems: "center", justifyContent: "center",
-                  color: view === "purchases" ? "var(--primary)" : "#8b5cf6"
+                  color: view === "purchases" ? "var(--primary)" : "#8b5cf6",
+                  border: "1px solid var(--border)"
                 }}>
-                  {view === "purchases" ? <ArrowUpRight size={20} /> : <ArrowDownLeft size={20} />}
+                  {view === "purchases" ? <ArrowUpRight size={22} /> : <ArrowDownLeft size={22} />}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
-                    <span style={{ fontWeight: "700", fontSize: "15px" }}>{item.referenceNumber}</span>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>• {new Date(item.date).toLocaleDateString()}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+                    <span style={{ fontWeight: "800", fontSize: "16px", color: "var(--text-main)" }}>{item.referenceNumber}</span>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", backgroundColor: "var(--tag-bg)", padding: "2px 8px", borderRadius: "6px" }}>
+                      {new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
                   </div>
-                  <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{item.partner?.name}</div>
+                  <div style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" }}>{item.partner?.name || "Independent Transaction"}</div>
                 </div>
 
-                <div className="erp-finance-meta" style={{ textAlign: "right", minWidth: "120px" }}>
-                  <div style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px" }}>${item.amount.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {actionLoading === item.id && <Loader size={12} className="spinner" />}
+                <div style={{ textAlign: "right", minWidth: "160px" }}>
+                  <div style={{ fontWeight: "900", fontSize: "18px", marginBottom: "6px", color: "var(--text-main)" }}>${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "flex-end" }}>
+                    {actionLoading === item.id && <Loader size={14} className="spinner" />}
+                    <button 
+                      onClick={() => handleDeleteTransaction(item.id)}
+                      disabled={actionLoading === item.id}
+                      title="Archived Record"
+                      style={{ color: "var(--text-muted)", opacity: 0.5 }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     <select 
                       value={item.status} 
                       disabled={actionLoading === item.id}
                       onChange={(e) => handleUpdateStatus(item.id, e.target.value)}
                       style={{ 
-                        fontSize: "10px", fontWeight: "800", padding: "2px 6px", borderRadius: "4px",
+                        fontSize: "10px", fontWeight: "900", padding: "4px 8px", borderRadius: "6px",
                         backgroundColor: "var(--input-bg)", color: getStatusColor(item.status),
-                        border: "none", cursor: "pointer", outline: "none", textAlign: "right", paddingRight: "0"
+                        border: "1px solid var(--border)", cursor: "pointer", outline: "none", textAlign: "center"
                       }}
                     >
                       {["Draft", "Pending", "Approved", "Paid", "Overdue", "Fulfilled"].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
@@ -220,7 +265,11 @@ const FinancialWorkflows = () => {
               </motion.div>
             ))}
             {transactions.length === 0 && (
-              <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontSize: "14px" }}>No transactions found.</div>
+              <div style={{ textAlign: "center", padding: "80px 40px", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "20px" }}>
+                <AlertCircle size={48} style={{ margin: "0 auto 16px", opacity: 0.2 }} />
+                <h4 style={{ fontWeight: "700", marginBottom: "8px" }}>No Transactions Found</h4>
+                <p style={{ fontSize: "13px" }}>Start by creating your first {view === "purchases" ? "purchase order" : "sales invoice"}.</p>
+              </div>
             )}
           </div>
         )}

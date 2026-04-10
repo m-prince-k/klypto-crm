@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -6,9 +6,80 @@ import {
   Wallet2,
   PieChart,
   BarChart,
+  Loader,
+  AlertTriangle,
 } from "lucide-react";
+import apiClient from "../../api/apiClient";
+
+const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
 const ERPAnalytics = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get("/erp-overview/stats");
+      setData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch ERP stats", err);
+      setError("Failed to load real-time analytics.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  if (loading) return <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={40} /></div>;
+
+  if (error) return (
+    <div className="glass-card" style={{ padding: "40px", textAlign: "center", color: "#ef4444", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+      <AlertTriangle size={40} />
+      <p style={{ fontWeight: "700" }}>{error}</p>
+      <button onClick={fetchStats} className="btn-secondary" style={{ padding: "8px 24px" }}>Retry</button>
+    </div>
+  );
+
+  const stats = [
+    {
+      label: "Total Sales",
+      value: fmt(data.totalSales),
+      icon: <DollarSign size={20} />,
+      color: "#10b981",
+      trend: "Actual",
+      up: true,
+    },
+    {
+      label: "Operational Cost",
+      value: fmt(data.operationalCost),
+      icon: <Wallet2 size={20} />,
+      color: "#ef4444",
+      trend: "Calculated",
+      up: false,
+    },
+    {
+      label: "Net Profit",
+      value: fmt(data.netProfit),
+      icon: <TrendingUp size={20} />,
+      color: "#0ea5e9",
+      trend: "Net",
+      up: data.netProfit >= 0,
+    },
+    {
+      label: "Asset Valuation",
+      value: fmt(data.assetValuation),
+      icon: <PieChart size={20} />,
+      color: "#8b5cf6",
+      trend: "Inventory",
+      up: true,
+    },
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Financial Summary Cards */}
@@ -19,40 +90,7 @@ const ERPAnalytics = () => {
           gap: "20px",
         }}
       >
-        {[
-          {
-            label: "Total Sales",
-            value: "$248,500",
-            icon: <DollarSign size={20} />,
-            color: "#10b981",
-            trend: "+14%",
-            up: true,
-          },
-          {
-            label: "Operational Cost",
-            value: "$92,400",
-            icon: <Wallet2 size={20} />,
-            color: "#ef4444",
-            trend: "+2%",
-            up: false,
-          },
-          {
-            label: "Net Profit",
-            value: "$156,100",
-            icon: <TrendingUp size={20} />,
-            color: "#0ea5e9",
-            trend: "+18%",
-            up: true,
-          },
-          {
-            label: "Asset Valuation",
-            value: "$1.2M",
-            icon: <PieChart size={20} />,
-            color: "#8b5cf6",
-            trend: "Stable",
-            up: true,
-          },
-        ].map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} className="glass-card" style={{ padding: "24px" }}>
             <div
               style={{
@@ -108,9 +146,9 @@ const ERPAnalytics = () => {
 
       <div
         className="erp-analytics-main"
-        style={{ display: "grid", gap: "24px" }}
+        style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}
       >
-        {/* Mock Chart Area */}
+        {/* Real Performance Chart */}
         <div className="glass-card" style={{ padding: "24px" }}>
           <div
             className="erp-analytics-header"
@@ -123,30 +161,11 @@ const ERPAnalytics = () => {
               marginBottom: "24px",
             }}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: "700" }}>
-              Monthly Financial Performance
-            </h3>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                style={{
-                  padding: "4px 12px",
-                  backgroundColor: "var(--tag-bg)",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                }}
-              >
-                6 Months
-              </button>
-              <button
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)",
-                }}
-              >
-                1 Year
-              </button>
+            <div>
+              <h3 style={{ fontSize: "18px", fontWeight: "700" }}>
+                Monthly Financial Performance
+              </h3>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Sales vs Costs (Last 6 Months)</p>
             </div>
           </div>
 
@@ -159,36 +178,66 @@ const ERPAnalytics = () => {
               padding: "0 20px",
             }}
           >
-            {[60, 45, 80, 55, 90, 75, 95].map((val, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-              >
+            {data.performance.map((m, i) => {
+               // Calculate bar heights relative to max value
+               const max = Math.max(...data.performance.map(p => Math.abs(p.sales), ...data.performance.map(p => Math.abs(p.cost)), 1));
+               const salesH = (Math.abs(m.sales) / max) * 100;
+               const costH = (Math.abs(m.cost) / max) * 100;
+
+               return (
                 <div
+                  key={i}
                   style={{
-                    width: "100%",
-                    height: `${val}%`,
-                    backgroundColor: "var(--primary)",
-                    background: "linear-gradient(to top, #0ea5e9, #8b5cf6)",
-                    borderRadius: "6px 6px 0 0",
-                    opacity: 1,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "8px",
+                    height: "100%",
+                    justifyContent: "flex-end"
                   }}
-                ></div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"][i]}
-                </span>
-              </div>
-            ))}
+                >
+                  <div style={{ display: "flex", gap: "4px", width: "100%", height: "100%", alignItems: "flex-end" }}>
+                    <div
+                      title={`Sales: ${fmt(m.sales)}`}
+                      style={{
+                        flex: 1,
+                        height: `${salesH}%`,
+                        background: "linear-gradient(to top, #10b981, #34d399)",
+                        borderRadius: "4px 4px 0 0",
+                        minHeight: m.sales > 0 ? "4px" : "0"
+                      }}
+                    />
+                    <div
+                      title={`Cost: ${fmt(m.cost)}`}
+                      style={{
+                        flex: 1,
+                        height: `${costH}%`,
+                        background: "linear-gradient(to top, #ef4444, #f87171)",
+                        borderRadius: "4px 4px 0 0",
+                        minHeight: m.cost > 0 ? "4px" : "0"
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                    {m.label}
+                  </span>
+                </div>
+               );
+            })}
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--text-muted)" }}>
+              <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: "#10b981" }} /> Sales
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--text-muted)" }}>
+              <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: "#ef4444" }} /> Costs
+            </div>
           </div>
         </div>
 
-        {/* Breakdown Card */}
+        {/* Operational Breakdown Card */}
         <div className="glass-card" style={{ padding: "24px" }}>
           <h3
             style={{
@@ -197,17 +246,12 @@ const ERPAnalytics = () => {
               marginBottom: "24px",
             }}
           >
-            Operational Breakdown
+            Activity Breakdown
           </h3>
           <div
             style={{ display: "flex", flexDirection: "column", gap: "20px" }}
           >
-            {[
-              { label: "Procurement", val: 40, color: "#0ea5e9" },
-              { label: "Operations", val: 25, color: "#8b5cf6" },
-              { label: "Marketing", val: 20, color: "#f59e0b" },
-              { label: "Fixed Assets", val: 15, color: "#10b981" },
-            ].map((item, i) => (
+            {data.breakdown.map((item, i) => (
               <div key={i}>
                 <div
                   style={{
@@ -217,10 +261,10 @@ const ERPAnalytics = () => {
                     marginBottom: "8px",
                   }}
                 >
-                  <span style={{ color: "var(--text-muted)" }}>
+                  <span style={{ color: "var(--text-muted)", fontWeight: "600" }}>
                     {item.label}
                   </span>
-                  <span style={{ fontWeight: "600" }}>{item.val}%</span>
+                  <span style={{ fontWeight: "800", color: "var(--primary)" }}>{item.count}</span>
                 </div>
                 <div
                   style={{
@@ -235,13 +279,20 @@ const ERPAnalytics = () => {
                     style={{
                       width: `${item.val}%`,
                       height: "100%",
-                      backgroundColor: item.color,
+                      backgroundColor: "var(--primary)",
+                      background: "linear-gradient(to right, var(--primary), #8b5cf6)",
                       borderRadius: "4px",
                     }}
                   ></div>
                 </div>
               </div>
             ))}
+            
+            <div style={{ marginTop: "12px", padding: "16px", backgroundColor: "rgba(var(--primary-rgb), 0.05)", borderRadius: "10px", border: "1px dashed var(--border)" }}>
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", lineHeight: "1.5" }}>
+                This breakdown tracks the volume of operational records across procurement, payroll, assets, and sales.
+              </p>
+            </div>
           </div>
         </div>
       </div>

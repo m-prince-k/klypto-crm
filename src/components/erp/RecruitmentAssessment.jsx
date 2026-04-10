@@ -12,6 +12,7 @@ import {
   Clock,
   Loader,
   XCircle,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
@@ -91,9 +92,35 @@ const RecruitmentAssessment = () => {
     setActionLoading(id);
     try {
       await apiClient.patch(`/recruitment/candidates/${id}`, { stage });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error("Failed to update candidate stage", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteJob = async (id) => {
+    if (!window.confirm("Delete this job posting and all associated candidate records?")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/recruitment/jobs/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete job");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteCandidate = async (id) => {
+    if (!window.confirm("Remove this candidate from the pipeline?")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/recruitment/candidates/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete candidate");
     } finally {
       setActionLoading(null);
     }
@@ -130,9 +157,20 @@ const RecruitmentAssessment = () => {
                       <h4 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "4px" }}>{job.title}</h4>
                       <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>{job.department} • {job.id.substring(0, 8)}</span>
                     </div>
-                    <span style={{ padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", backgroundColor: job.status === "Active" ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)", color: job.status === "Active" ? "#10b981" : "#f59e0b" }}>
-                      {job.status.toUpperCase()}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                      <span style={{ padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", backgroundColor: job.status === "Active" ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)", color: job.status === "Active" ? "#10b981" : "#f59e0b" }}>
+                        {job.status.toUpperCase()}
+                      </span>
+                      <button 
+                        onClick={() => handleDeleteJob(job.id)}
+                        disabled={actionLoading === job.id}
+                        style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                      >
+                        {actionLoading === job.id ? <Loader size={14} className="spinner" /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
                     <div style={{ display: "flex", gap: "8px", color: "var(--text-muted)" }}>
@@ -163,14 +201,25 @@ const RecruitmentAssessment = () => {
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {candidates.filter(c => c.stage === stage).map(candidate => (
                     <div key={candidate.id} className="glass-card" style={{ padding: "16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--primary)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700" }}>
-                          {candidate.name[0]}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--primary)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700" }}>
+                            {candidate.name[0]}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: "14px", fontWeight: "600" }}>{candidate.name}</div>
+                            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{candidate.role}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div style={{ fontSize: "14px", fontWeight: "600" }}>{candidate.name}</div>
-                          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{candidate.role}</div>
-                        </div>
+                        <button 
+                          onClick={() => handleDeleteCandidate(candidate.id)}
+                          disabled={actionLoading === candidate.id}
+                          style={{ color: "var(--text-muted)", opacity: 0.5 }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                          onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                        >
+                          {actionLoading === candidate.id ? <Loader size={12} className="spinner" /> : <XCircle size={14} />}
+                        </button>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#10b981", fontWeight: "700" }}>

@@ -10,6 +10,7 @@ import {
   Plus,
   Loader,
   X,
+  Trash2,
   ChevronRight,
   ShieldCheck,
   ShieldAlert,
@@ -71,9 +72,22 @@ const PartnerMaster = () => {
     setActionLoading(id);
     try {
       await apiClient.patch(`/partners/${id}`, { status });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error("Update failed", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeletePartner = async (id) => {
+    if (!window.confirm("Delete this partner profile? Transactions under this partner may be affected.")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/partners/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete partner");
     } finally {
       setActionLoading(null);
     }
@@ -187,7 +201,18 @@ const PartnerMaster = () => {
                     {activeSubTab === "customers" ? `$${partner.creditLimit?.toLocaleString()}` : partner.category}
                   </td>
                   <td style={{ padding: "16px", borderRadius: "0 12px 12px 0", textAlign: "right" }}>
-                    <button style={{ color: "var(--text-muted)" }}><ExternalLink size={16} /></button>
+                    <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", alignItems: "center" }}>
+                      <button 
+                        onClick={() => handleDeletePartner(partner.id)}
+                        disabled={actionLoading === partner.id}
+                        style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button style={{ color: "var(--text-muted)" }}><ExternalLink size={16} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}

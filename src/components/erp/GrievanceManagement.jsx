@@ -15,6 +15,7 @@ import {
   Send,
   Loader,
   XCircle,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
@@ -74,9 +75,22 @@ const GrievanceManagement = () => {
     setActionLoading(id);
     try {
       await apiClient.patch(`/grievances/${id}`, { status });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error("Failed to update status", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteGrievance = async (id) => {
+    if (!window.confirm("Permanently remove this grievance record?")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/grievances/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete grievance");
     } finally {
       setActionLoading(null);
     }
@@ -166,18 +180,27 @@ const GrievanceManagement = () => {
                         ID: {grv.id.substring(0,8)} • {grv.category} • {new Date(grv.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <div style={{ textAlign: "right", minWidth: "120px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      {actionLoading === grv.id && <Loader size={12} className="spinner" />}
-                      <select 
-                        value={grv.status}
-                        disabled={actionLoading === grv.id}
-                        onChange={(e) => handleUpdateStatus(grv.id, e.target.value)}
-                        style={{ backgroundColor: "transparent", border: "none", color: getStatusColor(grv.status), fontSize: "11px", fontWeight: "700", outline: "none", cursor: "pointer" }}
-                      >
-                        {["Open", "In Review", "Escalated", "Resolved"].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-                      </select>
-                    </div>
+                    <div style={{ textAlign: "right", minWidth: "150px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "flex-end" }}>
+                        {actionLoading === grv.id && <Loader size={12} className="spinner" />}
+                        <button 
+                          onClick={() => handleDeleteGrievance(grv.id)}
+                          disabled={actionLoading === grv.id}
+                          style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                          onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        <select 
+                          value={grv.status}
+                          disabled={actionLoading === grv.id}
+                          onChange={(e) => handleUpdateStatus(grv.id, e.target.value)}
+                          style={{ backgroundColor: "transparent", border: "none", color: getStatusColor(grv.status), fontSize: "11px", fontWeight: "700", outline: "none", cursor: "pointer" }}
+                        >
+                          {["Open", "In Review", "Escalated", "Resolved"].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+                        </select>
+                      </div>
                       <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>Severity: <span style={{ color: getSeverityColor(grv.severity) }}>{grv.severity}</span></div>
                     </div>
                   </div>

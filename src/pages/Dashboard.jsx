@@ -14,6 +14,7 @@ import {
   Clock3,
   Wallet2,
   Loader,
+  PieChart,
 } from "lucide-react";
 import {
   DASHBOARD_MODULES,
@@ -83,6 +84,7 @@ const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const [hrmsStats, setHrmsStats] = useState(null);
   const [crmStats, setCrmStats] = useState(null);
+  const [erpStats, setErpStats] = useState(null);
   const [recentLeads, setRecentLeads] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,14 +94,16 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [hrmsRes, crmRes, recentRes] = await Promise.all([
+        const [hrmsRes, crmRes, recentRes, erpRes] = await Promise.all([
           apiClient.get("/hrms-overview/stats"),
           apiClient.get("/crm-overview/stats"),
           apiClient.get("/crm-overview/recent"),
+          apiClient.get("/erp-overview/stats"),
         ]);
         setHrmsStats(hrmsRes.data);
         setCrmStats(crmRes.data);
         setRecentLeads(recentRes.data);
+        setErpStats(erpRes.data);
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
       } finally {
@@ -171,6 +175,19 @@ const Dashboard = () => {
             <StatCard title="Attendance Rate" value={hrmsStats?.attendanceRate || "0%"} trend="Staff present today" icon={<Clock3 size={24} />} isPositive={true} />
             <StatCard title="Pending Leaves" value={hrmsStats?.pendingLeaves || 0} trend="Urgent approvals needed" icon={<CalendarCheck2 size={24} />} isPositive={false} />
             <StatCard title="Payroll Readiness" value={hrmsStats?.payrollReady || "0%"} trend="Salary templates set" icon={<Wallet2 size={24} />} isPositive={true} />
+          </div>
+        </div>
+      )}
+
+      {/* ERP Financial Oversight */}
+      {hasModuleAccess(access, "erp") && (
+        <div style={{ marginBottom: "40px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>Financial Oversight (ERP)</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
+            <StatCard title="Total Sales" value={`$${(erpStats?.totalSales || 0).toLocaleString()}`} trend="Invoiced Revenue" icon={<DollarSign size={24} />} isPositive={true} />
+            <StatCard title="Operational Cost" value={`$${(erpStats?.operationalCost || 0).toLocaleString()}`} trend="Purchases + Payroll" icon={<Wallet2 size={24} />} isPositive={false} />
+            <StatCard title="Net Profit" value={`$${(erpStats?.netProfit || 0).toLocaleString()}`} trend="Sales minus Costs" icon={<TrendingUp size={24} />} isPositive={erpStats?.netProfit >= 0} />
+            <StatCard title="Asset Valuation" value={`$${(erpStats?.assetValuation || 0).toLocaleString()}`} trend="Capital Equipment" icon={<PieChart size={24} />} isPositive={true} />
           </div>
         </div>
       )}

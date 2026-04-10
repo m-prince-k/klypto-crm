@@ -10,6 +10,7 @@ import {
   X,
   Target,
   Users,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
@@ -70,11 +71,37 @@ const EntityManagement = () => {
       await apiClient.post("/entities/departments", deptForm);
       setShowDeptModal(false);
       setDeptForm({ name: "", branchId: "", headId: "" });
-      fetchData();
+      await fetchData();
     } catch (err) {
       alert("Failed to create department");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteBranch = async (id) => {
+    if (!window.confirm("Deleting a branch will affect all its departments and employees. Continue?")) return;
+    setLoading(true);
+    try {
+      await apiClient.delete(`/entities/branches/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete branch");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDept = async (id) => {
+    if (!window.confirm("Delete this department? This will unassign its members.")) return;
+    setLoading(true);
+    try {
+      await apiClient.delete(`/entities/departments/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete department");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,7 +132,7 @@ const EntityManagement = () => {
 
       <div className="responsive-grid-2 erp-entity-grid" style={{ display: "grid", gap: "24px" }}>
         {/* Branches List */}
-        <div className="glass-card" style={{ padding: "24px" }}>
+        <div className="glass-card" style={{ padding: "24px", background: "linear-gradient(180deg, var(--bg-card), rgba(30, 41, 59, 0.8))" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
             <h3 style={{ fontSize: "17px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
               <Network size={20} className="text-primary" /> Branches
@@ -118,7 +145,15 @@ const EntityManagement = () => {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {branches.map((branch) => (
-                <div key={branch.id} className="erp-entity-item" style={{ padding: "16px", backgroundColor: "var(--tag-bg)", borderRadius: "12px", display: "flex", alignItems: "center", gap: "16px", border: "1px solid var(--border)" }}>
+                <div key={branch.id} className="erp-entity-item" style={{ 
+                  padding: "16px", backgroundColor: "rgba(255,255,255,0.03)", 
+                  borderRadius: "12px", display: "flex", alignItems: "center", 
+                  gap: "16px", border: "1px solid var(--border)",
+                  transition: "background-color 0.2s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"}
+                >
                   <div style={{ padding: "10px", backgroundColor: "var(--icon-bg)", borderRadius: "8px", color: "var(--primary)" }}>
                     <Building2 size={24} />
                   </div>
@@ -128,21 +163,37 @@ const EntityManagement = () => {
                       {branch.type} • {branch._count?.departments || 0} Depts • {branch._count?.employees || 0} Staff
                     </p>
                   </div>
-                  {branch.head && (
-                    <div style={{ textAlign: "right", paddingRight: "10px" }}>
-                      <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Head</p>
-                      <p style={{ fontSize: "12px", fontWeight: "600" }}>{branch.head.name}</p>
-                    </div>
-                  )}
-                  <button style={{ color: "var(--text-muted)" }}><MoreVertical size={16} /></button>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    {branch.head && (
+                      <div style={{ textAlign: "right", paddingRight: "10px" }}>
+                        <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Head</p>
+                        <p style={{ fontSize: "12px", fontWeight: "600" }}>{branch.head.name}</p>
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => handleDeleteBranch(branch.id)}
+                      disabled={loading}
+                      title="Delete Branch"
+                      style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
+              {!loading && branches.length === 0 && (
+                <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontSize: "13px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+                  No branches registered yet.
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Departments List */}
-        <div className="glass-card" style={{ padding: "24px" }}>
+        <div className="glass-card" style={{ padding: "24px", background: "linear-gradient(180deg, var(--bg-card), rgba(30, 41, 59, 0.8))" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
             <h3 style={{ fontSize: "17px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
               <UserSquare2 size={20} style={{ color: "var(--primary)" }} /> Departments
@@ -155,20 +206,44 @@ const EntityManagement = () => {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {departments.map((dept) => (
-                <div key={dept.id} className="erp-entity-item" style={{ padding: "16px", backgroundColor: "var(--tag-bg)", borderRadius: "12px", display: "flex", alignItems: "center", gap: "16px", border: "1px solid var(--border)" }}>
+                <div key={dept.id} className="erp-entity-item" style={{ 
+                  padding: "16px", backgroundColor: "rgba(255,255,255,0.03)", 
+                  borderRadius: "12px", display: "flex", alignItems: "center", 
+                  gap: "16px", border: "1px solid var(--border)",
+                  transition: "background-color 0.2s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"}
+                >
                   <div style={{ flex: 1 }}>
                     <h4 style={{ fontSize: "14px", fontWeight: "700" }}>{dept.name}</h4>
                     <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
                       {dept.branch?.name} • {dept._count?.employees || 0} Members
                     </p>
                   </div>
-                  <div style={{ textAlign: "right", minWidth: "120px" }}>
-                    <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Leader</p>
-                    <p style={{ fontSize: "13px", fontWeight: "600" }}>{dept.head?.name || "Unassigned"}</p>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <div style={{ textAlign: "right", minWidth: "100px" }}>
+                      <p style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Leader</p>
+                      <p style={{ fontSize: "13px", fontWeight: "600" }}>{dept.head?.name || "Unassigned"}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteDept(dept.id)}
+                      disabled={loading}
+                      title="Delete Department"
+                      style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                      onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                      onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <ChevronRight size={18} style={{ color: "var(--text-muted)" }} />
                 </div>
               ))}
+              {!loading && departments.length === 0 && (
+                <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontSize: "13px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+                  No departments created yet.
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -142,20 +142,26 @@ const OrgSetup = () => {
 
         <div className="glass-card" style={{ padding: "32px" }}>
           <h4 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "24px" }}>Organizational Footprint</h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             {[
-              { label: "Global Headcount", value: stats?.employees || 0 },
-              { label: "Operating Branches", value: stats?.branches || 0 },
-              { label: "Active Departments", value: stats?.departments || 0 },
+              { label: "Total Headcount", value: stats?.employees || 0, color: "var(--primary)" },
+              { label: "Operating Branches", value: stats?.branches || 0, color: "var(--primary)" },
+              { label: "Active Departments", value: stats?.departments || 0, color: "var(--primary)" },
+              { label: "Tracked Assets", value: stats?.totalAssets || 0, color: "#10b981" },
+              { label: "Active Projects", value: stats?.totalProjects || 0, color: "#8b5cf6" },
+              { label: "System Health", value: stats?.systemHealth || "100%", color: "#0ea5e9" },
             ].map((s, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "16px", borderBottom: i < 2 ? "1px dashed var(--border)" : "none" }}>
-                <span style={{ color: "var(--text-muted)", fontSize: "15px", fontWeight: "500" }}>{s.label}</span>
-                <span style={{ fontWeight: "800", fontSize: "20px", color: "var(--primary)" }}>{s.value}</span>
+              <div key={i} style={{ padding: "16px", backgroundColor: "var(--tag-bg)", borderRadius: "12px", border: "1px solid var(--border)" }}>
+                <div style={{ color: "var(--text-muted)", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px" }}>{s.label}</div>
+                <div style={{ fontWeight: "800", fontSize: "24px", color: s.color }}>{s.value}</div>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: "24px", padding: "16px", backgroundColor: "rgba(139, 92, 246, 0.1)", borderRadius: "8px", border: "1px solid rgba(139, 92, 246, 0.2)" }}>
-            <p style={{ fontSize: "12px", color: "#8b5cf6", fontWeight: "600", textAlign: "center" }}>Stats are synced real-time with HRMS & Entity records.</p>
+          <div style={{ marginTop: "24px", padding: "16px", backgroundColor: "rgba(16, 185, 129, 0.05)", borderRadius: "10px", border: "1px dashed #10b981" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Data Security Index</span>
+              <span style={{ fontSize: "14px", fontWeight: "800", color: "#10b981" }}>{stats?.securityIndex || "98.5%"}</span>
+            </div>
           </div>
         </div>
       </div>

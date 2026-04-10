@@ -25,7 +25,7 @@ const AssetTracker = () => {
       const [assetRes, statsRes, empRes] = await Promise.all([
         apiClient.get('/assets'),
         apiClient.get('/assets/stats'),
-        apiClient.get('/employees/master')
+        apiClient.get('/employees')
       ]);
       setAssets(assetRes.data);
       setStats(statsRes.data);
@@ -63,9 +63,22 @@ const AssetTracker = () => {
     setActionLoading(id);
     try {
       await apiClient.patch(`/assets/${id}`, { status });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error("Update failed", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteAsset = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this asset?")) return;
+    setActionLoading(id);
+    try {
+      await apiClient.delete(`/assets/${id}`);
+      await fetchData();
+    } catch (err) {
+      alert("Failed to delete asset");
     } finally {
       setActionLoading(null);
     }
@@ -77,73 +90,96 @@ const AssetTracker = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Inventory Value</div>
-          <div style={{ fontSize: '24px', fontWeight: '800' }}>${stats?.totalValuation?.toLocaleString() || 0}</div>
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Total Inventory Value</div>
+          <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--primary)' }}>${stats?.totalValuation?.toLocaleString() || 0}</div>
         </div>
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Assets in Use</div>
-          <div style={{ fontSize: '24px', fontWeight: '800' }}>{stats?.inUse || 0}</div>
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Assets in Use</div>
+          <div style={{ fontSize: '28px', fontWeight: '800' }}>{stats?.inUse || 0}</div>
         </div>
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Under Maintenance</div>
-          <div style={{ fontSize: '24px', fontWeight: '800' }}><span style={{ color: '#ef4444' }}>{stats?.maintenance || 0}</span></div>
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Maintenance</div>
+          <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444' }}>{stats?.maintenance || 0}</div>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ height: '100%', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ height: '100%', borderRadius: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
           <Plus size={20} /> Add New Asset
         </button>
       </div>
 
       {/* Asset Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         {assets.map((asset) => (
-          <motion.div layout key={asset.id} className="glass-card" style={{ padding: '20px', display: 'flex', gap: '16px' }}>
+          <motion.div layout key={asset.id} className="glass-card" style={{ 
+            padding: '24px', display: 'flex', gap: '20px', 
+            background: 'linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.4))',
+            border: '1px solid var(--border)'
+          }}>
             <div style={{ 
-              width: '48px', height: '48px', borderRadius: '12px', 
-              backgroundColor: 'var(--tag-bg)', display: 'flex', 
+              width: '56px', height: '56px', borderRadius: '14px', 
+              backgroundColor: 'var(--icon-bg)', display: 'flex', 
               alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
             }}>
-              <Box size={24} />
+              <Box size={28} />
             </div>
             
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                <h4 style={{ fontSize: '15px', fontWeight: '700' }}>{asset.name}</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div>
+                   <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{asset.name}</h4>
+                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{asset.category}</p>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {actionLoading === asset.id && <Loader size={12} className="spinner" />}
+                  <button 
+                    onClick={() => handleDeleteAsset(asset.id)}
+                    disabled={actionLoading === asset.id}
+                    title="Delete Asset"
+                    style={{ color: 'var(--text-muted)', opacity: 0.6 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                   <select 
                     value={asset.status} 
                     disabled={actionLoading === asset.id}
                     onChange={(e) => handleUpdateStatus(asset.id, e.target.value)}
                     style={{ 
-                      fontSize: '10px', fontWeight: '800', padding: '2px 4px', borderRadius: '4px',
-                      backgroundColor: 'var(--input-bg)', color: asset.status === 'In Use' ? '#10b981' : '#f59e0b',
-                      border: 'none', cursor: 'pointer', outline: 'none'
+                      fontSize: '10px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px',
+                      backgroundColor: 'var(--input-bg)', color: asset.status === 'In Use' ? '#10b981' : asset.status === 'Maintenance' ? '#ef4444' : '#f59e0b',
+                      border: '1px solid var(--border)', cursor: 'pointer', outline: 'none', webkitAppearance: 'none'
                     }}
                   >
                     {['In Use', 'In Storage', 'Maintenance', 'Disposed'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
                   </select>
                 </div>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>ID: {asset.id.substring(0,8)} • {asset.category}</p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  <MapPin size={12} /> {asset.location}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '10px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  <MapPin size={14} className="text-primary" /> {asset.location}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  <DollarSign size={12} /> ${asset.value?.toLocaleString()}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-main)', fontWeight: '700' }}>
+                  <DollarSign size={14} className="text-primary" /> {asset.value?.toLocaleString()}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  <UserIcon size={12} /> {asset.employee?.name || '-'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                  <UserIcon size={14} /> {asset.employee?.name || 'Shared'}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--primary)', cursor: 'pointer' }}>
-                  <Info size={12} /> Details
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--primary)', cursor: 'pointer' }}>
+                   {actionLoading === asset.id ? <Loader size={12} className="spinner" /> : <><Info size={14} /> Details</>}
                 </div>
               </div>
             </div>
           </motion.div>
         ))}
+        {assets.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', border: '2px dashed var(--border)', borderRadius: '24px', backgroundColor: 'rgba(255,255,255,0.01)' }}>
+            <Box size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)', opacity: 0.3 }} />
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Asset Inventory Empty</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '300px', margin: '0 auto 20px' }}>Register your first asset to start tracking organizational resources and valuation.</p>
+            <button onClick={() => setShowModal(true)} className="btn-info" style={{ borderRadius: '8px' }}>Initialize Inventory</button>
+          </div>
+        )}
       </div>
 
       {/* Add Asset Modal */}

@@ -144,6 +144,22 @@ const Payroll = () => {
   };
 
   // ── Process payroll ─────────────────────────────────────────────────────
+  const handleExportCSV = () => {
+    if (records.length === 0) return alert("No records to export.");
+    const headers = ["Employee,Month,Year,Net Pay,Status"];
+    const rows = records.map(r => 
+      `${r.employee?.name},${MONTHS[r.month-1]},${r.year},${r.netPay},${r.status}`
+    );
+    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `payroll_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleProcessPayroll = async (e) => {
     e.preventDefault();
     setProcessError(null);
@@ -468,8 +484,11 @@ const Payroll = () => {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "24px" }}>
                 <h3 style={{ fontWeight: "700" }}>Payroll Analytics & Reports</h3>
                 <div style={{ display: "flex", gap: "10px" }}>
-                  <button style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "13px", color: "var(--text-main)" }}>Export PDF</button>
-                  <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px" }}><Download size={16} /> Export CSV</button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleExportCSV}
+                    style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  ><Download size={16} /> Export CSV</button>
                 </div>
               </div>
 

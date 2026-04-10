@@ -68,8 +68,17 @@ const ApprovalQueue = () => {
             <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>Centralized queue for cross-module workflow approvals.</p>
           </div>
           {!loading && (
-            <div style={{ padding: "6px 16px", backgroundColor: "var(--tag-bg)", borderRadius: "20px", fontSize: "12px", fontWeight: "700", color: "var(--primary)" }}>
-              {approvals.length} Pending Task{approvals.length !== 1 ? 's' : ''}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button 
+                onClick={fetchData} 
+                className="glass-card" 
+                style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "600", color: "var(--text-muted)" }}
+              >
+                <Loader size={14} className={loading ? "spinner" : ""} /> Refresh
+              </button>
+              <div style={{ padding: "6px 16px", backgroundColor: "var(--tag-bg)", borderRadius: "20px", fontSize: "12px", fontWeight: "700", color: "var(--primary)" }}>
+                {approvals.length} Pending Task{approvals.length !== 1 ? 's' : ''}
+              </div>
             </div>
           )}
         </div>
