@@ -60,6 +60,12 @@ export const DASHBOARD_MODULES = [
     route: "/roles-access",
     description: "Role administration",
   },
+  {
+    key: "users",
+    label: "User Management",
+    route: "/users",
+    description: "Provision employee accounts",
+  },
 ];
 
 export const DEFAULT_ROLE_MODULES = {
@@ -74,6 +80,7 @@ export const DEFAULT_ROLE_MODULES = {
     "hrms",
     "leave",
     "settings",
+    "users",
   ],
   MANAGER: [
     "dashboard",

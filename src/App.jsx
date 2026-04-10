@@ -20,6 +20,7 @@ import HRMS from "./pages/HRMS";
 import Leave from "./pages/Leave";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import UserManagement from "./pages/UserManagement";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { usePageSEO } from "./hooks/usePageSEO";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -179,6 +180,15 @@ function AppLayout() {
                 <ProtectedRoute
                   Component={RolesAccess}
                   requiredModules={["roles-access"]}
+                />
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute
+                  Component={UserManagement}
+                  requiredModules={["users"]}
                 />
               }
             />

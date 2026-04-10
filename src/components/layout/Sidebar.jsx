@@ -15,6 +15,7 @@ import {
   Wallet,
   PanelLeftClose,
   PanelLeftOpen,
+  UserCog,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { hasModuleAccess } from "../../utils/access";
@@ -96,6 +97,12 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       icon: <ShieldAlert size={20} />,
       path: "/roles-access",
       module: "roles-access",
+    },
+    {
+      title: "User Management",
+      icon: <UserCog size={20} />,
+      path: "/users",
+      module: "users",
     },
     {
       title: "Settings",
