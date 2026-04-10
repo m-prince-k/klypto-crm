@@ -164,6 +164,39 @@ select option {
   color: #0f172a;
 }
 
+.employee-portal input,
+.employee-portal textarea,
+.employee-portal select {
+  background-color: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.employee-portal input::placeholder,
+.employee-portal textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.employee-portal input[type="date"] {
+  color-scheme: dark;
+}
+
+.employee-portal input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.9) brightness(1.15);
+  opacity: 0.95;
+  cursor: pointer;
+}
+
+[data-theme="light"] .employee-portal input[type="date"] {
+  color-scheme: light;
+}
+
+[data-theme="light"]
+  .employee-portal
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
 
 .app-container {
   min-width: 0;

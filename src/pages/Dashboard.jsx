@@ -61,7 +61,11 @@ const StatCard = ({ title, value, change, icon, isPositive, trend }) => (
             fontWeight: "600",
           }}
         >
-          {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+          {isPositive ? (
+            <ArrowUpRight size={16} />
+          ) : (
+            <ArrowDownRight size={16} />
+          )}
           {change}
         </div>
       )}
@@ -75,8 +79,14 @@ const StatCard = ({ title, value, change, icon, isPositive, trend }) => (
     >
       {title}
     </div>
-    <div style={{ fontSize: "28px", fontWeight: "700", marginBottom: "4px" }}>{value}</div>
-    {trend && <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{trend}</div>}
+    <div style={{ fontSize: "28px", fontWeight: "700", marginBottom: "4px" }}>
+      {value}
+    </div>
+    {trend && (
+      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+        {trend}
+      </div>
+    )}
   </motion.div>
 );
 
@@ -90,6 +100,19 @@ const Dashboard = () => {
 
   const access = user?.access;
   const accessibleModules = getAccessibleModules(access);
+
+  const revenueFlowData =
+    erpStats?.performance?.length > 0
+      ? erpStats.performance.map((item) => ({
+          label: item.label,
+          value: Number(item.sales) || 0,
+        }))
+      : [];
+
+  const maxRevenueValue = Math.max(
+    1,
+    ...revenueFlowData.map((item) => item.value),
+  );
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -115,7 +138,14 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          height: "400px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Loader className="spinner" size={32} />
       </div>
     );
@@ -128,24 +158,49 @@ const Dashboard = () => {
       transition={{ duration: 0.5 }}
     >
       <header style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}>Executive Dashboard</h1>
+        <h1
+          style={{ fontSize: "24px", fontWeight: "700", marginBottom: "8px" }}
+        >
+          Executive Dashboard
+        </h1>
         <p style={{ color: "var(--text-muted)" }}>
-          Welcome back, {user?.fullName || "there"}. Your organization is currently powered by live data sync.
+          Welcome back, {user?.fullName || "there"}. Your organization is
+          currently powered by live data sync.
         </p>
       </header>
 
       <div
         className="glass-card"
-        style={{ padding: "16px 20px", marginBottom: "24px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}
+        style={{
+          padding: "16px 20px",
+          marginBottom: "24px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "10px",
+          alignItems: "center",
+        }}
       >
-        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>Modules Online:</span>
+        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+          Modules Online:
+        </span>
         {accessibleModules.map((moduleKey) => {
-          const module = DASHBOARD_MODULES.find((item) => item.key === moduleKey);
+          const module = DASHBOARD_MODULES.find(
+            (item) => item.key === moduleKey,
+          );
           return (
             <Link
               key={moduleKey}
               to={module?.route || "/"}
-              style={{ padding: "6px 14px", borderRadius: "999px", backgroundColor: "var(--tag-bg)", color: "var(--text-main)", fontSize: "12px", textDecoration: "none", border: "1px solid var(--border)", fontWeight: "600" }}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "999px",
+                backgroundColor: "var(--tag-bg)",
+                color: "var(--text-main)",
+                fontSize: "12px",
+                textDecoration: "none",
+                border: "1px solid var(--border)",
+                fontWeight: "600",
+              }}
             >
               {module?.label || moduleKey}
             </Link>
@@ -154,27 +209,99 @@ const Dashboard = () => {
       </div>
 
       {/* CRM Pipeline Stats */}
-      {(hasModuleAccess(access, "leads") || hasModuleAccess(access, "pipeline")) && (
+      {(hasModuleAccess(access, "leads") ||
+        hasModuleAccess(access, "pipeline")) && (
         <div style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>Sales Pipeline Summary</h2>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              marginBottom: "16px",
+            }}
+          >
+            Sales Pipeline Summary
+          </h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
-            <StatCard title="Total Leads" value={crmStats?.totalLeads || 0} trend="Total generated" icon={<Users size={24} />} isPositive={true} />
-            <StatCard title="Active Deals" value={crmStats?.activeDeals || 0} trend="In mid-pipeline" icon={<Target size={24} />} isPositive={true} />
-            <StatCard title="Pipeline Value" value={crmStats?.totalRevenue || "$0"} trend="Estimated potential" icon={<DollarSign size={24} />} isPositive={true} />
-            <StatCard title="Conversion" value={crmStats?.conversionRate || "0%"} trend="Rate of Won deals" icon={<TrendingUp size={24} />} isPositive={true} />
+            <StatCard
+              title="Total Leads"
+              value={crmStats?.totalLeads || 0}
+              trend="Total generated"
+              icon={<Users size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Active Deals"
+              value={crmStats?.activeDeals || 0}
+              trend="In mid-pipeline"
+              icon={<Target size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Pipeline Value"
+              value={crmStats?.totalRevenue || "$0"}
+              trend="Estimated potential"
+              icon={<DollarSign size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Conversion"
+              value={crmStats?.conversionRate || "0%"}
+              trend="Rate of Won deals"
+              icon={<TrendingUp size={24} />}
+              isPositive={true}
+            />
           </div>
         </div>
       )}
 
       {/* HRMS Stats */}
-      {(hasModuleAccess(access, "hrms") || hasModuleAccess(access, "employees")) && (
+      {(hasModuleAccess(access, "hrms") ||
+        hasModuleAccess(access, "employees")) && (
         <div style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>HRMS People Operations</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
-            <StatCard title="Total Headcount" value={hrmsStats?.totalEmployees || 0} trend="Active staff roster" icon={<Users2 size={24} />} isPositive={true} />
-            <StatCard title="Attendance Rate" value={hrmsStats?.attendanceRate || "0%"} trend="Staff present today" icon={<Clock3 size={24} />} isPositive={true} />
-            <StatCard title="Pending Leaves" value={hrmsStats?.pendingLeaves || 0} trend="Urgent approvals needed" icon={<CalendarCheck2 size={24} />} isPositive={false} />
-            <StatCard title="Payroll Readiness" value={hrmsStats?.payrollReady || "0%"} trend="Salary templates set" icon={<Wallet2 size={24} />} isPositive={true} />
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              marginBottom: "16px",
+            }}
+          >
+            HRMS People Operations
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            <StatCard
+              title="Total Headcount"
+              value={hrmsStats?.totalEmployees || 0}
+              trend="Active staff roster"
+              icon={<Users2 size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Attendance Rate"
+              value={hrmsStats?.attendanceRate || "0%"}
+              trend="Staff present today"
+              icon={<Clock3 size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Pending Leaves"
+              value={hrmsStats?.pendingLeaves || 0}
+              trend="Urgent approvals needed"
+              icon={<CalendarCheck2 size={24} />}
+              isPositive={false}
+            />
+            <StatCard
+              title="Payroll Readiness"
+              value={hrmsStats?.payrollReady || "0%"}
+              trend="Salary templates set"
+              icon={<Wallet2 size={24} />}
+              isPositive={true}
+            />
           </div>
         </div>
       )}
@@ -182,54 +309,214 @@ const Dashboard = () => {
       {/* ERP Financial Oversight */}
       {hasModuleAccess(access, "erp") && (
         <div style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}>Financial Oversight (ERP)</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" }}>
-            <StatCard title="Total Sales" value={`$${(erpStats?.totalSales || 0).toLocaleString()}`} trend="Invoiced Revenue" icon={<DollarSign size={24} />} isPositive={true} />
-            <StatCard title="Operational Cost" value={`$${(erpStats?.operationalCost || 0).toLocaleString()}`} trend="Purchases + Payroll" icon={<Wallet2 size={24} />} isPositive={false} />
-            <StatCard title="Net Profit" value={`$${(erpStats?.netProfit || 0).toLocaleString()}`} trend="Sales minus Costs" icon={<TrendingUp size={24} />} isPositive={erpStats?.netProfit >= 0} />
-            <StatCard title="Asset Valuation" value={`$${(erpStats?.assetValuation || 0).toLocaleString()}`} trend="Capital Equipment" icon={<PieChart size={24} />} isPositive={true} />
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              marginBottom: "16px",
+            }}
+          >
+            Financial Oversight (ERP)
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            <StatCard
+              title="Total Sales"
+              value={`$${(erpStats?.totalSales || 0).toLocaleString()}`}
+              trend="Invoiced Revenue"
+              icon={<DollarSign size={24} />}
+              isPositive={true}
+            />
+            <StatCard
+              title="Operational Cost"
+              value={`$${(erpStats?.operationalCost || 0).toLocaleString()}`}
+              trend="Purchases + Payroll"
+              icon={<Wallet2 size={24} />}
+              isPositive={false}
+            />
+            <StatCard
+              title="Net Profit"
+              value={`$${(erpStats?.netProfit || 0).toLocaleString()}`}
+              trend="Sales minus Costs"
+              icon={<TrendingUp size={24} />}
+              isPositive={erpStats?.netProfit >= 0}
+            />
+            <StatCard
+              title="Asset Valuation"
+              value={`$${(erpStats?.assetValuation || 0).toLocaleString()}`}
+              trend="Capital Equipment"
+              icon={<PieChart size={24} />}
+              isPositive={true}
+            />
           </div>
         </div>
       )}
 
       {/* Dashboard Visuals */}
-      <div className="responsive-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-        <div className="glass-card" style={{ padding: "24px", minHeight: "350px" }}>
-          <h3 style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>Revenue Flow</h3>
-          <div style={{ height: "220px", width: "100%", display: "flex", alignItems: "flex-end", gap: "12px", paddingBottom: "20px" }}>
-            {[40, 60, 45, 90, 65, 80, 55, 100, 75, 85].map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ height: 0 }}
-                animate={{ height: `${h}%` }}
-                transition={{ delay: i * 0.1, duration: 1 }}
-                style={{ flex: 1, background: "linear-gradient(to top, var(--primary), #8b5cf6)", borderRadius: "6px 6px 0 0", opacity: 0.8 }}
-              />
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
-            <span>Q1 Trend</span><span>Q2 Outlook</span><span>Q3 Estimate</span>
-          </div>
+      <div
+        className="responsive-grid-2"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "24px",
+        }}
+      >
+        <div
+          className="glass-card"
+          style={{ padding: "24px", minHeight: "350px" }}
+        >
+          <h3
+            style={{
+              marginBottom: "20px",
+              fontSize: "18px",
+              fontWeight: "700",
+            }}
+          >
+            Revenue Flow
+          </h3>
+          {revenueFlowData.length > 0 ? (
+            <>
+              <div
+                style={{
+                  height: "220px",
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: "12px",
+                  paddingBottom: "20px",
+                }}
+              >
+                {revenueFlowData.map((item, i) => {
+                  const barHeight =
+                    item.value > 0
+                      ? Math.max((item.value / maxRevenueValue) * 100, 8)
+                      : 2;
+                  return (
+                    <motion.div
+                      key={`${item.label}-${i}`}
+                      initial={{ height: 0 }}
+                      animate={{ height: `${barHeight}%` }}
+                      transition={{ delay: i * 0.08, duration: 0.7 }}
+                      title={`${item.label}: $${item.value.toLocaleString()}`}
+                      style={{
+                        flex: 1,
+                        background:
+                          "linear-gradient(to top, var(--primary), #8b5cf6)",
+                        borderRadius: "6px 6px 0 0",
+                        opacity: 0.85,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: "var(--text-muted)",
+                  fontSize: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                {revenueFlowData.map((item) => (
+                  <span key={item.label}>{item.label}</span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                minHeight: "220px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-muted)",
+                border: "1px dashed var(--border)",
+                borderRadius: "12px",
+              }}
+            >
+              No revenue trend data available yet.
+            </div>
+          )}
         </div>
 
         <div className="glass-card" style={{ padding: "24px" }}>
-          <h3 style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "700" }}>Recent Lead Activity</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <h3
+            style={{
+              marginBottom: "20px",
+              fontSize: "18px",
+              fontWeight: "700",
+            }}
+          >
+            Recent Lead Activity
+          </h3>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+          >
             {recentLeads.length === 0 ? (
-              <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>No recent activity to show.</div>
+              <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+                No recent activity to show.
+              </div>
             ) : (
               recentLeads.map((lead, i) => (
-                <div key={lead.id} style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "16px", borderBottom: i !== recentLeads.length - 1 ? "1px solid var(--border)" : "none" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold", color: "white" }}>
+                <div
+                  key={lead.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    paddingBottom: "16px",
+                    borderBottom:
+                      i !== recentLeads.length - 1
+                        ? "1px solid var(--border)"
+                        : "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
                     {lead.name[0]}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "14px", fontWeight: "600" }}>{lead.name}</div>
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{lead.company || "Individual"}</div>
+                    <div style={{ fontSize: "14px", fontWeight: "600" }}>
+                      {lead.name}
+                    </div>
+                    <div
+                      style={{ fontSize: "12px", color: "var(--text-muted)" }}
+                    >
+                      {lead.company || "Individual"}
+                    </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "14px", fontWeight: "600" }}>${lead.value?.toLocaleString() || 0}</div>
-                    <div style={{ fontSize: "10px", color: "#10b981", fontWeight: "700" }}>{lead.status}</div>
+                    <div style={{ fontSize: "14px", fontWeight: "600" }}>
+                      ${lead.value?.toLocaleString() || 0}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        color: "#10b981",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {lead.status}
+                    </div>
                   </div>
                 </div>
               ))

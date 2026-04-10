@@ -17,6 +17,7 @@ import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
 import GrievanceManagement from "./components/erp/GrievanceManagement";
 import Payroll from "./components/erp/Payroll";
 import HRMS from "./pages/HRMS";
+import EmployeePortal from "./pages/EmployeePortal";
 import Leave from "./pages/Leave";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -39,7 +40,6 @@ const SEOHelper = () => {
  */
 function AppLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const EmployeesModule = () => <HRMS initialTab="employees" />;
 
   useKeyboardShortcuts([
     {
@@ -154,7 +154,7 @@ function AppLayout() {
               path="/employees"
               element={
                 <ProtectedRoute
-                  Component={EmployeesModule}
+                  Component={EmployeePortal}
                   requiredModules={["employees"]}
                 />
               }

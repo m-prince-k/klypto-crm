@@ -91,7 +91,7 @@ export const DEFAULT_ROLE_MODULES = {
     "settings",
   ],
   HR: ["dashboard", "hrms", "employees", "leave", "settings"],
-  EMPLOYEE: ["dashboard", "hrms", "leave", "settings"],
+  EMPLOYEE: ["dashboard", "employees", "leave", "grievances", "settings"],
 };
 
 export const getModuleLabel = (moduleKey) =>
