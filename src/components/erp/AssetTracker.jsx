@@ -1,21 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Box, MapPin, Calendar, DollarSign, Tag, Info, Plus, Loader, X, Trash2, User as UserIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import apiClient from '../../api/apiClient';
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Tag,
+  Info,
+  Plus,
+  Loader,
+  X,
+  Trash2,
+  User as UserIcon,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import apiClient from "../../api/apiClient";
 
 const AssetTracker = () => {
   const [assets, setAssets] = useState([]);
   const [stats, setStats] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    category: 'IT Electronics',
-    location: '',
-    value: '',
-    status: 'In Storage',
-    employeeId: ''
+    name: "",
+    category: "IT Electronics",
+    location: "",
+    value: "",
+    status: "In Storage",
+    employeeId: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of asset being updated
@@ -23,9 +37,9 @@ const AssetTracker = () => {
   const fetchData = async () => {
     try {
       const [assetRes, statsRes, empRes] = await Promise.all([
-        apiClient.get('/assets'),
-        apiClient.get('/assets/stats'),
-        apiClient.get('/employees')
+        apiClient.get("/assets"),
+        apiClient.get("/assets/stats"),
+        apiClient.get("/employees"),
       ]);
       setAssets(assetRes.data);
       setStats(statsRes.data);
@@ -47,10 +61,17 @@ const AssetTracker = () => {
     try {
       const data = { ...formData, value: parseFloat(formData.value) || 0 };
       if (!data.employeeId) delete data.employeeId;
-      
-      await apiClient.post('/assets', data);
+
+      await apiClient.post("/assets", data);
       setShowModal(false);
-      setFormData({ name: '', category: 'IT Electronics', location: '', value: '', status: 'In Storage', employeeId: '' });
+      setFormData({
+        name: "",
+        category: "IT Electronics",
+        location: "",
+        value: "",
+        status: "In Storage",
+        employeeId: "",
+      });
       fetchData();
     } catch (err) {
       alert("Failed to add asset");
@@ -84,100 +105,516 @@ const AssetTracker = () => {
     }
   };
 
-  if (loading) return <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center" }}><Loader className="spinner" size={32} /></div>;
+  const availableCategories = Array.from(
+    new Set(assets.map((asset) => asset.category).filter(Boolean)),
+  );
+
+  const filteredAssets = assets.filter((asset) => {
+    const statusMatch = statusFilter === "all" || asset.status === statusFilter;
+    const categoryMatch =
+      categoryFilter === "all" || asset.category === categoryFilter;
+    return statusMatch && categoryMatch;
+  });
+  const hasActiveFilters = statusFilter !== "all" || categoryFilter !== "all";
+
+  if (loading)
+    return (
+      <div
+        style={{
+          height: "400px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Loader className="spinner" size={32} />
+      </div>
+    );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Total Inventory Value</div>
-          <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--primary)' }}>${stats?.totalValuation?.toLocaleString() || 0}</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        <div
+          className="glass-card"
+          style={{
+            padding: "24px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--text-muted)",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              fontWeight: "700",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Total Inventory Value
+          </div>
+          <div
+            style={{
+              fontSize: "28px",
+              fontWeight: "800",
+              color: "var(--primary)",
+            }}
+          >
+            ${stats?.totalValuation?.toLocaleString() || 0}
+          </div>
         </div>
-        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Assets in Use</div>
-          <div style={{ fontSize: '28px', fontWeight: '800' }}>{stats?.inUse || 0}</div>
+        <div
+          className="glass-card"
+          style={{
+            padding: "24px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--text-muted)",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              fontWeight: "700",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Assets in Use
+          </div>
+          <div style={{ fontSize: "28px", fontWeight: "800" }}>
+            {stats?.inUse || 0}
+          </div>
         </div>
-        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Maintenance</div>
-          <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444' }}>{stats?.maintenance || 0}</div>
+        <div
+          className="glass-card"
+          style={{
+            padding: "24px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "12px",
+              color: "var(--text-muted)",
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              fontWeight: "700",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Maintenance
+          </div>
+          <div
+            style={{ fontSize: "28px", fontWeight: "800", color: "#ef4444" }}
+          >
+            {stats?.maintenance || 0}
+          </div>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ height: '100%', borderRadius: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px' }}>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-primary"
+          style={{
+            height: "100%",
+            borderRadius: "12px",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            padding: "20px",
+          }}
+        >
           <Plus size={20} /> Add New Asset
         </button>
       </div>
 
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label
+              style={{
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                fontWeight: "700",
+                letterSpacing: "0.4px",
+              }}
+            >
+              FILTER STATUS
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                backgroundColor: "var(--input-bg)",
+                border: "1px solid var(--border)",
+                color: "var(--text-main)",
+                fontSize: "13px",
+                minWidth: "170px",
+              }}
+            >
+              <option value="all">All Statuses</option>
+              {["In Use", "In Storage", "Maintenance", "Disposed"].map(
+                (status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ),
+              )}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label
+              style={{
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                fontWeight: "700",
+                letterSpacing: "0.4px",
+              }}
+            >
+              FILTER CATEGORY
+            </label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                backgroundColor: "var(--input-bg)",
+                border: "1px solid var(--border)",
+                color: "var(--text-main)",
+                fontSize: "13px",
+                minWidth: "200px",
+              }}
+            >
+              <option value="all">All Categories</option>
+              {availableCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setStatusFilter("all");
+                setCategoryFilter("all");
+              }}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+                backgroundColor: "transparent",
+                color: "var(--text-muted)",
+                fontSize: "12px",
+                fontWeight: "700",
+              }}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+          Showing:{" "}
+          <strong>
+            {statusFilter === "all" ? "All Statuses" : statusFilter}
+          </strong>{" "}
+          ·{" "}
+          <strong>
+            {categoryFilter === "all" ? "All Categories" : categoryFilter}
+          </strong>
+        </div>
+      </div>
+
       {/* Asset Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-        {assets.map((asset) => (
-          <motion.div layout key={asset.id} className="glass-card" style={{ 
-            padding: '24px', display: 'flex', gap: '20px', 
-            background: 'linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.4))',
-            border: '1px solid var(--border)'
-          }}>
-            <div style={{ 
-              width: '56px', height: '56px', borderRadius: '14px', 
-              backgroundColor: 'var(--icon-bg)', display: 'flex', 
-              alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
-            }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        {filteredAssets.map((asset) => (
+          <motion.div
+            layout
+            key={asset.id}
+            className="glass-card"
+            style={{
+              padding: "24px",
+              display: "flex",
+              gap: "20px",
+              background:
+                "linear-gradient(145deg, var(--bg-card), rgba(30, 41, 59, 0.4))",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "14px",
+                backgroundColor: "var(--icon-bg)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--primary)",
+              }}
+            >
               <Box size={28} />
             </div>
-            
+
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "8px",
+                }}
+              >
                 <div>
-                   <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{asset.name}</h4>
-                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{asset.category}</p>
+                  <h4 style={{ fontSize: "16px", fontWeight: "700" }}>
+                    {asset.name}
+                  </h4>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {asset.category}
+                  </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button 
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <button
                     onClick={() => handleDeleteAsset(asset.id)}
                     disabled={actionLoading === asset.id}
                     title="Delete Asset"
-                    style={{ color: 'var(--text-muted)', opacity: 0.6 }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                    style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = "#ef4444")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = "var(--text-muted)")
+                    }
                   >
                     <Trash2 size={16} />
                   </button>
-                  <select 
-                    value={asset.status} 
+                  <select
+                    value={asset.status}
                     disabled={actionLoading === asset.id}
-                    onChange={(e) => handleUpdateStatus(asset.id, e.target.value)}
-                    style={{ 
-                      fontSize: '10px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px',
-                      backgroundColor: 'var(--input-bg)', color: asset.status === 'In Use' ? '#10b981' : asset.status === 'Maintenance' ? '#ef4444' : '#f59e0b',
-                      border: '1px solid var(--border)', cursor: 'pointer', outline: 'none', webkitAppearance: 'none'
+                    onChange={(e) =>
+                      handleUpdateStatus(asset.id, e.target.value)
+                    }
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: "900",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      backgroundColor: "var(--input-bg)",
+                      color:
+                        asset.status === "In Use"
+                          ? "#10b981"
+                          : asset.status === "Maintenance"
+                            ? "#ef4444"
+                            : "#f59e0b",
+                      border: "1px solid var(--border)",
+                      cursor: "pointer",
+                      outline: "none",
+                      webkitAppearance: "none",
                     }}
                   >
-                    {['In Use', 'In Storage', 'Maintenance', 'Disposed'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+                    {["In Use", "In Storage", "Maintenance", "Disposed"].map(
+                      (s) => (
+                        <option key={s} value={s}>
+                          {s.toUpperCase()}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '10px', marginTop: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                  padding: "12px",
+                  backgroundColor: "rgba(255,255,255,0.02)",
+                  borderRadius: "10px",
+                  marginTop: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   <MapPin size={14} className="text-primary" /> {asset.location}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-main)', fontWeight: '700' }}>
-                  <DollarSign size={14} className="text-primary" /> {asset.value?.toLocaleString()}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "11px",
+                    color: "var(--text-main)",
+                    fontWeight: "700",
+                  }}
+                >
+                  <DollarSign size={14} className="text-primary" />{" "}
+                  {asset.value?.toLocaleString()}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  <UserIcon size={14} /> {asset.employee?.name || 'Shared'}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <UserIcon size={14} /> {asset.employee?.name || "Shared"}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--primary)', cursor: 'pointer' }}>
-                   {actionLoading === asset.id ? <Loader size={12} className="spinner" /> : <><Info size={14} /> Details</>}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "11px",
+                    color: "var(--primary)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {actionLoading === asset.id ? (
+                    <Loader size={12} className="spinner" />
+                  ) : (
+                    <>
+                      <Info size={14} /> Details
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </motion.div>
         ))}
         {assets.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', padding: '60px', textAlign: 'center', border: '2px dashed var(--border)', borderRadius: '24px', backgroundColor: 'rgba(255,255,255,0.01)' }}>
-            <Box size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)', opacity: 0.3 }} />
-            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Asset Inventory Empty</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '300px', margin: '0 auto 20px' }}>Register your first asset to start tracking organizational resources and valuation.</p>
-            <button onClick={() => setShowModal(true)} className="btn-info" style={{ borderRadius: '8px' }}>Initialize Inventory</button>
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "60px",
+              textAlign: "center",
+              border: "2px dashed var(--border)",
+              borderRadius: "24px",
+              backgroundColor: "rgba(255,255,255,0.01)",
+            }}
+          >
+            <Box
+              size={48}
+              style={{
+                margin: "0 auto 16px",
+                color: "var(--text-muted)",
+                opacity: 0.3,
+              }}
+            />
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: "700",
+                marginBottom: "8px",
+              }}
+            >
+              Asset Inventory Empty
+            </h3>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontSize: "14px",
+                maxWidth: "300px",
+                margin: "0 auto 20px",
+              }}
+            >
+              Register your first asset to start tracking organizational
+              resources and valuation.
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn-info"
+              style={{ borderRadius: "8px" }}
+            >
+              Initialize Inventory
+            </button>
+          </div>
+        )}
+        {assets.length > 0 && filteredAssets.length === 0 && (
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              padding: "60px",
+              textAlign: "center",
+              border: "2px dashed var(--border)",
+              borderRadius: "24px",
+              backgroundColor: "rgba(255,255,255,0.01)",
+            }}
+          >
+            <Box
+              size={48}
+              style={{
+                margin: "0 auto 16px",
+                color: "var(--text-muted)",
+                opacity: 0.3,
+              }}
+            />
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: "700",
+                marginBottom: "8px",
+              }}
+            >
+              No Matching Assets
+            </h3>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontSize: "14px",
+                maxWidth: "300px",
+                margin: "0 auto",
+              }}
+            >
+              Try changing status or category filters.
+            </p>
           </div>
         )}
       </div>
@@ -185,21 +622,106 @@ const AssetTracker = () => {
       {/* Add Asset Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '800' }}>Register New Asset</h2>
-                <button onClick={() => setShowModal(false)}><X size={20} /></button>
+          <div
+            className="modal-overlay"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card"
+              style={{ width: "100%", maxWidth: "500px", padding: "32px" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "24px",
+                }}
+              >
+                <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
+                  Register New Asset
+                </h2>
+                <button onClick={() => setShowModal(false)}>
+                  <X size={20} style={{ color: "white" }} />
+                </button>
               </div>
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <form
+                onSubmit={handleSubmit}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                }}
+              >
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Asset Name</label>
-                  <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'white' }} />
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Asset Name
+                  </label>
+                  <input
+                    required
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                    }}
+                  />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                  }}
+                >
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label>
-                    <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'white' }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Category
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        backgroundColor: "var(--input-bg)",
+                        border: "1px solid var(--border)",
+                        color: "white",
+                      }}
+                    >
                       <option>IT Electronics</option>
                       <option>Furniture</option>
                       <option>Stationery</option>
@@ -207,28 +729,112 @@ const AssetTracker = () => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Value ($)</label>
-                    <input type="number" value={formData.value} onChange={e => setFormData({...formData, value: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'white' }} />
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Value ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.value}
+                      onChange={(e) =>
+                        setFormData({ ...formData, value: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        backgroundColor: "var(--input-bg)",
+                        border: "1px solid var(--border)",
+                        color: "white",
+                      }}
+                    />
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Location</label>
-                  <input required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'white' }} />
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Location
+                  </label>
+                  <input
+                    required
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                    }}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Assign to Employee (Optional)</label>
-                  <select value={formData.employeeId} onChange={e => setFormData({...formData, employeeId: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'white' }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Assign to Employee (Optional)
+                  </label>
+                  <select
+                    value={formData.employeeId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, employeeId: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                    }}
+                  >
                     <option value="">Unassigned</option>
-                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name} ({emp.department})</option>)}
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.department})
+                      </option>
+                    ))}
                   </select>
                 </div>
-                 <button 
-                  type="submit" 
-                  className="btn-primary" 
+                <button
+                  type="submit"
+                  className="btn-primary"
                   disabled={submitting}
-                  style={{ padding: '14px', borderRadius: '10px', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  style={{
+                    padding: "14px",
+                    borderRadius: "10px",
+                    marginTop: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
                 >
-                  {submitting ? <Loader size={18} className="spinner" /> : "Register Asset"}
+                  {submitting ? (
+                    <Loader size={18} className="spinner" />
+                  ) : (
+                    "Register Asset"
+                  )}
                 </button>
               </form>
             </motion.div>

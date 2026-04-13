@@ -22,7 +22,7 @@ const HRMSOverview = () => {
         const response = await apiClient.get("/hrms-overview/stats");
         setStats(response.data);
       } catch (err) {
-        console.error("Failed to fetch HRMS overview stats", err);
+        console.error("Failed to fetch HR overview stats", err);
       } finally {
         setLoading(false);
       }
@@ -79,7 +79,7 @@ const HRMSOverview = () => {
   const milestones = [
     {
       title: "Core Infrastructure Active",
-      detail: "Backend APIs and Database schemas for HRMS are fully operational.",
+      detail: "Backend APIs and Database schemas for HR are fully operational.",
       status: "Ready",
     },
     {
@@ -89,7 +89,8 @@ const HRMSOverview = () => {
     },
     {
       title: "Payroll & Performance Ready",
-      detail: "Modules for salary management and performance reviews are integrated.",
+      detail:
+        "Modules for salary management and performance reviews are integrated.",
       status: "Active",
     },
   ];
@@ -178,7 +179,7 @@ const HRMSOverview = () => {
             }}
           >
             <h3 style={{ fontSize: "18px", fontWeight: "700" }}>
-              HRMS Execution Snapshot
+              HR Execution Snapshot
             </h3>
             <span
               style={{
@@ -267,7 +268,7 @@ const HRMSOverview = () => {
               marginBottom: "16px",
             }}
           >
-            HRMS Multi-Tenant Focus
+            HR Multi-Tenant Focus
           </h3>
           <div style={{ display: "grid", gap: "12px" }}>
             {[

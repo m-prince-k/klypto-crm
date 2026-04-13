@@ -17,9 +17,11 @@ import {
   X,
   Check,
   XCircle,
+  Pencil,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
 import apiClient from "../api/apiClient";
 
 // ── Month names ────────────────────────────────────────────────────────────
@@ -99,8 +101,12 @@ const Leave = () => {
   const hasLeaveApprovalRole = normalizedRoles.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "MANAGER", "HR"].includes(role),
   );
+  const hasLeaveEditRole = normalizedRoles.some((role) =>
+    ["SUPER_ADMIN", "HR"].includes(role),
+  );
   const canManage =
     user?.access?.canManageUsers || isSuperAdmin || hasLeaveApprovalRole;
+  const canEditPendingLeaves = isSuperAdmin || hasLeaveEditRole;
 
   const [activeTab, setActiveTab] = useState("overview");
   const tabNavRef = useRef(null);
@@ -113,9 +119,12 @@ const Leave = () => {
   const [myEmployeeId, setMyEmployeeId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [requestStatusFilter, setRequestStatusFilter] = useState("All");
 
   // ── Apply Leave modal state ────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("create");
+  const [editingRequestId, setEditingRequestId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [formData, setFormData] = useState({
@@ -142,6 +151,7 @@ const Leave = () => {
       setMyEmployeeId(myEmpRes.data?.employeeId ?? null);
     } catch (e) {
       console.error("Leave fetch failed", e);
+      toast.error("Failed to load leave data");
     } finally {
       setLoading(false);
     }
@@ -186,7 +196,11 @@ const Leave = () => {
   const handleStatusChange = async (id, status) => {
     setActionLoading(id + status);
     try {
-      const res = await apiClient.patch(`/leaves/${id}/status`, { status });
+      const res = await apiClient.patch(
+        `/leaves/${id}/status`,
+        { status },
+        { toast: false },
+      );
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: res.data.status } : r)),
       );
@@ -201,11 +215,61 @@ const Leave = () => {
               : s.approvedThisMonth,
         }));
       }
+      toast.success(
+        status === "Approved"
+          ? "Leave request approved"
+          : status === "Rejected"
+            ? "Leave request rejected"
+            : "Leave status updated",
+      );
     } catch (e) {
       console.error("Status update failed", e);
+      toast.error(e.response?.data?.message || "Failed to update leave status");
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setModalMode("create");
+    setEditingRequestId(null);
+    setFormError(null);
+    setFormData({
+      type: "Annual",
+      startDate: "",
+      endDate: "",
+      reason: "",
+      employeeId: "",
+    });
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (request) => {
+    if (!canEditPendingLeaves) {
+      toast.error("Only HR or Super Admin can edit leave requests");
+      return;
+    }
+
+    if (!request || request.status !== "Pending") {
+      toast.error("Only pending leave requests can be edited");
+      return;
+    }
+
+    setModalMode("edit");
+    setEditingRequestId(request.id);
+    setFormError(null);
+    setFormData({
+      type: request.type || "Annual",
+      startDate: request.startDate
+        ? new Date(request.startDate).toISOString().split("T")[0]
+        : "",
+      endDate: request.endDate
+        ? new Date(request.endDate).toISOString().split("T")[0]
+        : "",
+      reason: request.reason || "",
+      employeeId: request.employeeId || "",
+    });
+    setShowModal(true);
   };
 
   // ── Submit leave request ───────────────────────────────────────────────
@@ -216,12 +280,20 @@ const Leave = () => {
     const payload = { ...formData };
     if (!canManage && myEmployeeId) payload.employeeId = myEmployeeId;
     try {
-      const res = await apiClient.post("/leaves", payload);
-      setRequests((prev) => [res.data, ...prev]);
-      setStats((s) =>
-        s ? { ...s, total: s.total + 1, pending: s.pending + 1 } : s,
-      );
+      if (modalMode === "edit" && editingRequestId) {
+        await apiClient.patch(`/leaves/${editingRequestId}`, payload, {
+          toast: false,
+        });
+        toast.success("Leave request updated");
+      } else {
+        await apiClient.post("/leaves", payload, { toast: false });
+        toast.success("Leave request submitted");
+      }
+
+      await fetchAll();
       setShowModal(false);
+      setModalMode("create");
+      setEditingRequestId(null);
       setFormData({
         type: "Annual",
         startDate: "",
@@ -231,8 +303,14 @@ const Leave = () => {
       });
       setActiveTab("requests");
     } catch (err) {
-      setFormError(
-        err.response?.data?.message || "Failed to submit request. Try again.",
+      const message =
+        err.response?.data?.message ||
+        (modalMode === "edit"
+          ? "Failed to update request. Try again."
+          : "Failed to submit request. Try again.");
+      setFormError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
       );
     } finally {
       setSubmitting(false);
@@ -242,6 +320,10 @@ const Leave = () => {
   // ── Computed list helpers ──────────────────────────────────────────────
   const pendingRequests = requests.filter((r) => r.status === "Pending");
   const approvedRequests = requests.filter((r) => r.status === "Approved");
+  const filteredRequests = requests.filter(
+    (request) =>
+      requestStatusFilter === "All" || request.status === requestStatusFilter,
+  );
 
   // ── Calendar: derive leave days from approved requests in current month ─
   const now = new Date();
@@ -629,6 +711,29 @@ const Leave = () => {
                                 flexShrink: 0,
                               }}
                             >
+                              {canEditPendingLeaves && (
+                                <button
+                                  onClick={() => handleOpenEditModal(r)}
+                                  disabled={!!actionLoading}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    padding: "7px 14px",
+                                    borderRadius: "8px",
+                                    border: "1px solid var(--border)",
+                                    color: "var(--text-main)",
+                                    fontSize: "12px",
+                                    fontWeight: "700",
+                                    backgroundColor: "transparent",
+                                    cursor: actionLoading
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  }}
+                                >
+                                  <Pencil size={14} /> Edit
+                                </button>
+                              )}
                               <button
                                 onClick={() =>
                                   handleStatusChange(r.id, "Approved")
@@ -703,10 +808,7 @@ const Leave = () => {
               title="Leave Requests"
               action={
                 <button
-                  onClick={() => {
-                    setShowModal(true);
-                    setFormError(null);
-                  }}
+                  onClick={handleOpenCreateModal}
                   className="btn-primary"
                   style={{
                     display: "inline-flex",
@@ -721,6 +823,47 @@ const Leave = () => {
               <div style={{ display: "grid", gap: "24px" }}>
                 <div
                   className="glass-card"
+                  style={{
+                    padding: "12px",
+                    display: "flex",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {["All", "Pending", "Approved", "Rejected"].map((status) => {
+                    const count =
+                      status === "All"
+                        ? requests.length
+                        : requests.filter(
+                            (request) => request.status === status,
+                          ).length;
+                    const active = requestStatusFilter === status;
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => setRequestStatusFilter(status)}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: `1px solid ${active ? "var(--primary)" : "var(--border)"}`,
+                          backgroundColor: active
+                            ? "rgba(14,165,233,0.15)"
+                            : "var(--tag-bg)",
+                          color: active
+                            ? "var(--text-main)"
+                            : "var(--text-muted)",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {status} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+                <div
+                  className="glass-card"
                   style={{ padding: "24px", overflowX: "auto" }}
                 >
                   {loading ? (
@@ -733,7 +876,7 @@ const Leave = () => {
                     >
                       <Loader size={32} className="spinner" />
                     </div>
-                  ) : requests.length === 0 ? (
+                  ) : filteredRequests.length === 0 ? (
                     <div
                       style={{
                         textAlign: "center",
@@ -745,7 +888,7 @@ const Leave = () => {
                         size={40}
                         style={{ opacity: 0.3, marginBottom: "12px" }}
                       />
-                      <p>No leave requests yet. Submit the first one!</p>
+                      <p>No leave requests found for selected filter.</p>
                     </div>
                   ) : (
                     <table
@@ -786,7 +929,7 @@ const Leave = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {requests.map((r) => (
+                        {filteredRequests.map((r) => (
                           <tr
                             key={r.id}
                             style={{ backgroundColor: "var(--tag-bg)" }}
@@ -864,6 +1007,26 @@ const Leave = () => {
                                       justifyContent: "flex-end",
                                     }}
                                   >
+                                    {canEditPendingLeaves && (
+                                      <button
+                                        onClick={() => handleOpenEditModal(r)}
+                                        disabled={!!actionLoading}
+                                        style={{
+                                          padding: "5px 10px",
+                                          borderRadius: "8px",
+                                          border: "1px solid var(--border)",
+                                          color: "var(--text-main)",
+                                          fontSize: "11px",
+                                          fontWeight: "700",
+                                          backgroundColor: "transparent",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "4px",
+                                        }}
+                                      >
+                                        <Pencil size={12} /> Edit
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() =>
                                         handleStatusChange(r.id, "Approved")
@@ -1425,7 +1588,9 @@ const Leave = () => {
               >
                 <div>
                   <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
-                    Apply for Leave
+                    {modalMode === "edit"
+                      ? "Edit Leave Request"
+                      : "Apply for Leave"}
                   </h2>
                   <p
                     style={{
@@ -1434,11 +1599,17 @@ const Leave = () => {
                       marginTop: "4px",
                     }}
                   >
-                    Fill in the details below to submit your request.
+                    {modalMode === "edit"
+                      ? "Update the pending request before approval or rejection."
+                      : "Fill in the details below to submit your request."}
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setModalMode("create");
+                    setEditingRequestId(null);
+                  }}
                   style={{ color: "var(--text-muted)", padding: "4px" }}
                 >
                   <X size={22} />
@@ -1676,11 +1847,15 @@ const Leave = () => {
                 >
                   {submitting ? (
                     <>
-                      <Loader size={20} className="spinner" /> Submitting…
+                      <Loader size={20} className="spinner" />
+                      {modalMode === "edit"
+                        ? " Saving changes…"
+                        : " Submitting…"}
                     </>
                   ) : (
                     <>
-                      <CalendarDays size={20} /> Submit Request
+                      <CalendarDays size={20} />
+                      {modalMode === "edit" ? "Save Changes" : "Submit Request"}
                     </>
                   )}
                 </button>

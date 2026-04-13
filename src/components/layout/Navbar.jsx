@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Search, Bell, Plus, Settings, Moon, Sun, Menu } from "lucide-react";
-import { logoutUser } from "../../store/auth/authSlice";
+import { logout, logoutUser } from "../../store/auth/authSlice";
+import { toast } from "sonner";
 
 const Navbar = ({ onMenuClick }) => {
   const [theme, setTheme] = useState(
@@ -12,6 +13,7 @@ const Navbar = ({ onMenuClick }) => {
   const settingsRef = React.useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { accessToken } = useSelector((state) => state.auth);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -43,6 +45,50 @@ const Navbar = ({ onMenuClick }) => {
     await dispatch(logoutUser());
     navigate("/login");
   };
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const apiBaseUrl =
+      import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+    const eventUrl = `${apiBaseUrl}/auth/events?token=${encodeURIComponent(accessToken)}`;
+
+    const eventSource = new EventSource(eventUrl);
+
+    eventSource.onmessage = (event) => {
+      try {
+        if (typeof event.data !== "string") {
+          return;
+        }
+
+        const trimmedData = event.data.trim();
+        if (!trimmedData.startsWith("{") && !trimmedData.startsWith("[")) {
+          return;
+        }
+
+        const payload = JSON.parse(trimmedData);
+        if (payload?.type === "USER_DEACTIVATED") {
+          dispatch(logout());
+          toast.error(
+            payload?.message ||
+              "Your account has been deactivated. You have been logged out.",
+          );
+          navigate("/login", { replace: true });
+          eventSource.close();
+        }
+      } catch {
+        // ignore malformed SSE payloads
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [accessToken, dispatch, navigate]);
 
   return (
     <header
@@ -147,25 +193,6 @@ const Navbar = ({ onMenuClick }) => {
           marginLeft: "auto",
         }}
       >
-        <button
-          className="create-new-btn"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 16px",
-            backgroundColor: "var(--primary)",
-            color: "white",
-            borderRadius: "8px",
-            fontSize: "14px",
-            fontWeight: "500",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <Plus size={18} />
-          Create New
-        </button>
-
         <div
           style={{
             width: "1px",

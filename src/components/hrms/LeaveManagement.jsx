@@ -25,6 +25,7 @@ const LeaveManagement = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of record being updated
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const fetchData = async () => {
     try {
@@ -80,7 +81,9 @@ const LeaveManagement = () => {
     } catch (err) {
       console.error("Failed to apply leave", err);
       const msg = err.message || err; // apiClient returns message string
-      alert(`Failed to apply leave: ${Array.isArray(msg) ? msg.join(", ") : msg}`);
+      alert(
+        `Failed to apply leave: ${Array.isArray(msg) ? msg.join(", ") : msg}`,
+      );
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +104,10 @@ const LeaveManagement = () => {
     );
   }
 
+  const filteredRequests = requests.filter(
+    (request) => statusFilter === "All" || request.status === statusFilter,
+  );
+
   return (
     <div style={{ display: "grid", gap: "24px" }}>
       <div
@@ -110,7 +117,9 @@ const LeaveManagement = () => {
           alignItems: "center",
         }}
       >
-        <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Leave Management</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: "700" }}>
+          Leave Management
+        </h2>
         <button
           onClick={() => setShowModal(true)}
           className="btn-primary"
@@ -121,25 +130,55 @@ const LeaveManagement = () => {
       </div>
 
       <div className="glass-card" style={{ padding: "24px" }}>
-        <h3
+        <div
           style={{
-            fontSize: "18px",
-            fontWeight: "700",
-            marginBottom: "16px",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "16px",
           }}
         >
-          <CalendarCheck2 size={18} /> Leave Requests
-        </h3>
+          <h3
+            style={{
+              fontSize: "18px",
+              fontWeight: "700",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              margin: 0,
+            }}
+          >
+            <CalendarCheck2 size={18} /> Leave Requests
+          </h3>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            style={{
+              padding: "8px 10px",
+              borderRadius: "8px",
+              backgroundColor: "var(--input-bg)",
+              border: "1px solid var(--border)",
+              color: "var(--text-main)",
+              fontSize: "12px",
+              fontWeight: "600",
+            }}
+          >
+            {["All", "Pending", "Approved", "Rejected"].map((statusOption) => (
+              <option key={statusOption} value={statusOption}>
+                {statusOption}
+              </option>
+            ))}
+          </select>
+        </div>
         <div style={{ display: "grid", gap: "12px" }}>
-          {requests.length === 0 ? (
+          {filteredRequests.length === 0 ? (
             <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-              No leave requests found.
+              No leave requests found for selected filter.
             </div>
           ) : (
-            requests.map((request) => (
+            filteredRequests.map((request) => (
               <div
                 key={request.id}
                 style={{
@@ -177,8 +216,8 @@ const LeaveManagement = () => {
                         request.status === "Approved"
                           ? "#10b981"
                           : request.status === "Rejected"
-                          ? "#ef4444"
-                          : "#f59e0b",
+                            ? "#ef4444"
+                            : "#f59e0b",
                     }}
                   >
                     {request.status === "Approved" ? (
@@ -194,19 +233,45 @@ const LeaveManagement = () => {
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button
                         className="btn-primary"
-                        onClick={() => handleStatusUpdate(request.id, "Approved")}
+                        onClick={() =>
+                          handleStatusUpdate(request.id, "Approved")
+                        }
                         disabled={actionLoading === request.id}
-                        style={{ padding: "6px 14px", backgroundColor: "#10b981", display: "flex", alignItems: "center", gap: "6px" }}
+                        style={{
+                          padding: "6px 14px",
+                          backgroundColor: "#10b981",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
                       >
-                        {actionLoading === request.id ? <Loader size={14} className="spinner" /> : <CheckCircle2 size={16} />} Approve
+                        {actionLoading === request.id ? (
+                          <Loader size={14} className="spinner" />
+                        ) : (
+                          <CheckCircle2 size={16} />
+                        )}{" "}
+                        Approve
                       </button>
                       <button
                         className="btn-primary"
-                        onClick={() => handleStatusUpdate(request.id, "Rejected")}
+                        onClick={() =>
+                          handleStatusUpdate(request.id, "Rejected")
+                        }
                         disabled={actionLoading === request.id}
-                        style={{ padding: "6px 14px", backgroundColor: "#ef4444", display: "flex", alignItems: "center", gap: "6px" }}
+                        style={{
+                          padding: "6px 14px",
+                          backgroundColor: "#ef4444",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
                       >
-                        {actionLoading === request.id ? <Loader size={14} className="spinner" /> : <XCircle size={16} />} Reject
+                        {actionLoading === request.id ? (
+                          <Loader size={14} className="spinner" />
+                        ) : (
+                          <XCircle size={16} />
+                        )}{" "}
+                        Reject
                       </button>
                     </div>
                   )}
@@ -243,7 +308,9 @@ const LeaveManagement = () => {
                 marginBottom: "24px",
               }}
             >
-              <h3 style={{ fontSize: "20px", fontWeight: "700" }}>Apply Leave</h3>
+              <h3 style={{ fontSize: "20px", fontWeight: "700" }}>
+                Apply Leave
+              </h3>
               <button
                 onClick={() => setShowModal(false)}
                 style={{ color: "var(--text-muted)" }}
@@ -252,7 +319,10 @@ const LeaveManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleApplyLeave} style={{ display: "grid", gap: "16px" }}>
+            <form
+              onSubmit={handleApplyLeave}
+              style={{ display: "grid", gap: "16px" }}
+            >
               <div>
                 <label
                   style={{
@@ -325,7 +395,13 @@ const LeaveManagement = () => {
                 </select>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "16px",
+                }}
+              >
                 <div>
                   <label
                     style={{
@@ -413,7 +489,11 @@ const LeaveManagement = () => {
                 />
               </div>
 
-              <button type="submit" className="btn-primary" style={{ marginTop: "12px" }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ marginTop: "12px" }}
+              >
                 Submit Request
               </button>
             </form>

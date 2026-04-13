@@ -75,7 +75,7 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       module: "erp",
     },
     {
-      title: "HRMS",
+      title: "HR",
       icon: <BadgeCheck size={20} />,
       path: "/hrms",
       module: "hrms",

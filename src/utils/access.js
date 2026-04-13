@@ -35,7 +35,7 @@ export const DASHBOARD_MODULES = [
     route: "/payroll",
     description: "Compensation and payroll",
   },
-  { key: "hrms", label: "HRMS", route: "/hrms", description: "HR operations" },
+  { key: "hrms", label: "HR", route: "/hrms", description: "HR operations" },
   {
     key: "employees",
     label: "Employees",
@@ -69,7 +69,9 @@ export const DASHBOARD_MODULES = [
 ];
 
 export const DEFAULT_ROLE_MODULES = {
-  SUPER_ADMIN: DASHBOARD_MODULES.map((module) => module.key),
+  SUPER_ADMIN: DASHBOARD_MODULES.map((module) => module.key).filter(
+    (moduleKey) => moduleKey !== "employees",
+  ),
   ADMIN: [
     "dashboard",
     "leads",
@@ -117,14 +119,12 @@ export const normalizeModules = (modules = []) => [
 
 export const hasModuleAccess = (access, moduleKey) => {
   if (!access) return false;
-  if (access.isSuperAdmin) return true;
   const modules = normalizeModules(access.dashboardModules || []);
   return modules.includes(moduleKey);
 };
 
 export const getAccessibleModules = (access) => {
   if (!access) return [];
-  if (access.isSuperAdmin) return DASHBOARD_MODULES.map((module) => module.key);
   return normalizeModules(access.dashboardModules || []);
 };
 

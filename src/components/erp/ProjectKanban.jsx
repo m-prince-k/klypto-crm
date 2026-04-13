@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import {
   MoreHorizontal,
@@ -8,7 +8,7 @@ import {
   Loader,
   Trash2,
   CheckCircle,
-  ChevronDown,
+  Pencil,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,13 +17,14 @@ import apiClient from "../../api/apiClient";
 const ProjectKanban = () => {
   const { user } = useSelector((state) => state.auth);
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
-  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [taskModalMode, setTaskModalMode] = useState("create");
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -41,14 +42,63 @@ const ProjectKanban = () => {
   const [actionLoading, setActionLoading] = useState(null); // ID of task being updated
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
-  const projectDropdownRef = useRef(null);
+  const selectedProject = useMemo(
+    () =>
+      projects.find(
+        (project) => String(project.id) === String(selectedProjectId),
+      ) || null,
+    [projects, selectedProjectId],
+  );
   const normalizedRoles = (user?.roles || []).map((role) =>
     String(role).toUpperCase(),
   );
   const canManageProjects = normalizedRoles.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "MANAGER", "HR"].includes(role),
   );
+  const canEditTaskDetails = normalizedRoles.some((role) =>
+    ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role),
+  );
   const employeeAllowedStatuses = ["inprogress", "review", "done"];
+
+  const resetTaskForm = () => {
+    setTaskModalMode("create");
+    setEditingTaskId(null);
+    setNewTask({
+      title: "",
+      description: "",
+      priority: "Medium",
+      dueDate: "",
+      assigneeId: "",
+    });
+  };
+
+  const handleOpenCreateTaskModal = () => {
+    resetTaskForm();
+    setShowTaskModal(true);
+  };
+
+  const handleOpenEditTaskModal = (task) => {
+    if (!canEditTaskDetails || !task) return;
+
+    const dueDateValue = task.dueDate
+      ? new Date(task.dueDate).toISOString().split("T")[0]
+      : "";
+
+    const assigneeIdValue = String(
+      task.assigneeId || task.assignee?.id || task.assignee?.userId || "",
+    );
+
+    setTaskModalMode("edit");
+    setEditingTaskId(task.id);
+    setNewTask({
+      title: task.title || "",
+      description: task.description || "",
+      priority: task.priority || "Medium",
+      dueDate: dueDateValue,
+      assigneeId: assigneeIdValue,
+    });
+    setShowTaskModal(true);
+  };
 
   const fetchData = async () => {
     try {
@@ -58,9 +108,6 @@ const ProjectKanban = () => {
         apiClient.get("/employees"),
       ]);
       setProjects(projectsRes.data);
-      if (projectsRes.data.length > 0 && !selectedProject) {
-        setSelectedProject(projectsRes.data[0]);
-      }
       setTasks(tasksRes.data);
       setEmployees(employeesRes.data || []);
     } catch (err) {
@@ -75,38 +122,23 @@ const ProjectKanban = () => {
   }, []);
 
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (
-        showProjectDropdown &&
-        projectDropdownRef.current &&
-        !projectDropdownRef.current.contains(event.target)
-      ) {
-        setShowProjectDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [showProjectDropdown]);
-
-  useEffect(() => {
     if (!projects.length) {
-      setSelectedProject(null);
+      setSelectedProjectId(null);
       return;
     }
 
-    if (!selectedProject) {
-      setSelectedProject(projects[0]);
+    if (!selectedProjectId) {
+      setSelectedProjectId(projects[0].id);
       return;
     }
 
     const matchedProject = projects.find(
-      (project) => project.id === selectedProject.id,
+      (project) => String(project.id) === String(selectedProjectId),
     );
     if (!matchedProject) {
-      setSelectedProject(projects[0]);
+      setSelectedProjectId(projects[0].id);
     }
-  }, [projects, selectedProject]);
+  }, [projects, selectedProjectId]);
 
   const handleStatusChange = async (taskId, newStatus) => {
     if (!canManageProjects && !employeeAllowedStatuses.includes(newStatus)) {
@@ -182,7 +214,6 @@ const ProjectKanban = () => {
       });
     } catch (err) {
       setTasks(previousTasks);
-      alert("Failed to update task status");
     } finally {
       setActionLoading(null);
       setDraggedTaskId(null);
@@ -190,30 +221,36 @@ const ProjectKanban = () => {
     }
   };
 
-  const handleCreateTask = async (e) => {
+  const handleSubmitTask = async (e) => {
     e.preventDefault();
-    if (!selectedProject) return;
+    if (!selectedProject && taskModalMode === "create") return;
+
     setSubmitting(true);
+
+    const payload = {
+      title: newTask.title,
+      description: newTask.description,
+      priority: newTask.priority,
+      dueDate: newTask.dueDate
+        ? new Date(newTask.dueDate).toISOString()
+        : undefined,
+      assigneeId: newTask.assigneeId || undefined,
+    };
+
     try {
-      await apiClient.post("/projects/tasks", {
-        ...newTask,
-        dueDate: newTask.dueDate
-          ? new Date(newTask.dueDate).toISOString()
-          : undefined,
-        assigneeId: newTask.assigneeId || undefined,
-        projectId: selectedProject.id,
-      });
+      if (taskModalMode === "edit" && editingTaskId) {
+        await apiClient.patch(`/projects/tasks/${editingTaskId}`, payload);
+      } else {
+        await apiClient.post("/projects/tasks", {
+          ...payload,
+          projectId: selectedProject.id,
+        });
+      }
+
       setShowTaskModal(false);
-      setNewTask({
-        title: "",
-        description: "",
-        priority: "Medium",
-        dueDate: "",
-        assigneeId: "",
-      });
+      resetTaskForm();
       fetchData();
     } catch (err) {
-      alert("Failed to create task");
     } finally {
       setSubmitting(false);
     }
@@ -239,17 +276,8 @@ const ProjectKanban = () => {
         managerId: "",
       });
       await fetchData();
-      if (res.data) setSelectedProject(res.data);
+      if (res.data?.id) setSelectedProjectId(res.data.id);
     } catch (err) {
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Failed to create project";
-      alert(
-        Array.isArray(errorMessage)
-          ? errorMessage.join(", ")
-          : String(errorMessage),
-      );
     } finally {
       setSubmitting(false);
     }
@@ -300,7 +328,9 @@ const ProjectKanban = () => {
   ];
 
   const filteredTasks = tasks.filter(
-    (t) => !selectedProject || t.projectId === selectedProject.id,
+    (t) =>
+      !selectedProject ||
+      String(t.projectId || t.project?.id || "") === String(selectedProject.id),
   );
 
   return (
@@ -316,147 +346,42 @@ const ProjectKanban = () => {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div
-            ref={projectDropdownRef}
-            style={{ position: "relative", minWidth: "240px" }}
-          >
-            <button
-              type="button"
-              onClick={() => setShowProjectDropdown((prev) => !prev)}
+          <div style={{ minWidth: "260px", position: "relative" }}>
+            <CheckCircle
+              size={16}
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--primary)",
+                pointerEvents: "none",
+              }}
+            />
+            <select
+              value={selectedProjectId ? String(selectedProjectId) : ""}
+              onChange={(event) => setSelectedProjectId(event.target.value)}
               style={{
                 width: "100%",
-                padding: "10px 18px",
+                padding: "10px 12px 10px 36px",
                 borderRadius: "12px",
                 backgroundColor: "var(--input-bg)",
                 border: "1px solid var(--border)",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                cursor: "pointer",
-                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.1)",
+                color: "var(--text-main)",
+                fontSize: "14px",
+                fontWeight: "700",
+                outline: "none",
               }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  flexShrink: 0,
-                }}
-              >
-                <CheckCircle size={18} />
-              </div>
-              <span
-                style={{
-                  fontWeight: "800",
-                  fontSize: "14px",
-                  flex: 1,
-                  color: "var(--text-main)",
-                  textAlign: "left",
-                }}
-              >
-                {selectedProject?.name || "Select Project"}
-              </span>
-              <ChevronDown
-                size={18}
-                className="text-muted"
-                style={{
-                  transform: showProjectDropdown
-                    ? "rotate(180deg)"
-                    : "rotate(0deg)",
-                  transition: "transform 0.2s ease",
-                  color: "white",
-                }}
-              />
-            </button>
-
-            <AnimatePresence>
-              {showProjectDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ duration: 0.16 }}
-                  className="glass-card"
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 8px)",
-                    left: 0,
-                    right: 0,
-                    zIndex: 30,
-                    maxHeight: "280px",
-                    overflowY: "auto",
-                    border: "1px solid var(--border)",
-                    padding: "8px",
-                    display: "grid",
-                    gap: "6px",
-                  }}
-                >
-                  {projects.map((project) => {
-                    const isSelected = selectedProject?.id === project.id;
-                    return (
-                      <button
-                        key={project.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedProject(project);
-                          setShowProjectDropdown(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "10px",
-                          width: "100%",
-                          border: "1px solid var(--border)",
-                          borderRadius: "10px",
-                          padding: "10px 12px",
-                          backgroundColor: isSelected
-                            ? "rgba(14,165,233,0.14)"
-                            : "var(--input-bg)",
-                          color: "var(--text-main)",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: "2px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: isSelected ? "700" : "600",
-                              textAlign: "left",
-                            }}
-                          >
-                            {project.name}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              color: "var(--text-muted)",
-                              textAlign: "left",
-                            }}
-                          >
-                            Manager: {project.manager?.fullName || "Unassigned"}
-                          </span>
-                        </div>
-                        {isSelected ? <CheckCircle size={14} /> : null}
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
+              {!projects.length ? (
+                <option value="">No Projects Available</option>
+              ) : null}
+              {projects.map((project) => (
+                <option key={project.id} value={String(project.id)}>
+                  {project.name} — {project.manager?.fullName || "Unassigned"}
+                </option>
+              ))}
+            </select>
           </div>
           {selectedProject && (
             <div
@@ -493,7 +418,7 @@ const ProjectKanban = () => {
         {canManageProjects && (
           <button
             className="btn-primary"
-            onClick={() => setShowTaskModal(true)}
+            onClick={handleOpenCreateTaskModal}
             style={{
               display: "flex",
               alignItems: "center",
@@ -630,6 +555,21 @@ const ProjectKanban = () => {
                       <div style={{ display: "flex", gap: "10px" }}>
                         {actionLoading === task.id && (
                           <Loader size={12} className="spinner" />
+                        )}
+                        {canEditTaskDetails && (
+                          <button
+                            onClick={() => handleOpenEditTaskModal(task)}
+                            style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.color = "var(--primary)")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.color =
+                                "var(--text-muted)")
+                            }
+                          >
+                            <Pencil size={14} />
+                          </button>
                         )}
                         {canManageProjects && (
                           <button
@@ -850,7 +790,10 @@ const ProjectKanban = () => {
             >
               <div style={{ position: "absolute", top: "24px", right: "24px" }}>
                 <button
-                  onClick={() => setShowTaskModal(false)}
+                  onClick={() => {
+                    setShowTaskModal(false);
+                    resetTaskForm();
+                  }}
                   style={{ color: "var(--text-muted)" }}
                 >
                   <X size={24} />
@@ -876,10 +819,10 @@ const ProjectKanban = () => {
                 >
                   <Plus size={24} />
                 </div>
-                New Project Task
+                {taskModalMode === "edit" ? "Edit Task" : "New Project Task"}
               </h2>
               <form
-                onSubmit={handleCreateTask}
+                onSubmit={handleSubmitTask}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -927,45 +870,6 @@ const ProjectKanban = () => {
                     }}
                   >
                     Priority & Impact
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          fontSize: "13px",
-                          fontWeight: "700",
-                          color: "var(--text-muted)",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        Project Manager
-                      </label>
-                      <select
-                        value={projectForm.managerId}
-                        onChange={(e) =>
-                          setProjectForm({
-                            ...projectForm,
-                            managerId: e.target.value,
-                          })
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "14px",
-                          borderRadius: "10px",
-                          backgroundColor: "var(--input-bg)",
-                          border: "1px solid var(--border)",
-                          color: "white",
-                        }}
-                      >
-                        <option value="">Select manager (optional)</option>
-                        {employees
-                          .filter((employee) => employee.userId)
-                          .map((employee) => (
-                            <option key={employee.id} value={employee.userId}>
-                              {employee.name} ({employee.department})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
                   </label>
                   <div style={{ position: "relative" }}>
                     <select
@@ -1103,7 +1007,10 @@ const ProjectKanban = () => {
                 >
                   <button
                     type="button"
-                    onClick={() => setShowTaskModal(false)}
+                    onClick={() => {
+                      setShowTaskModal(false);
+                      resetTaskForm();
+                    }}
                     className="btn-secondary"
                     style={{ flex: 1, padding: "14px" }}
                   >
@@ -1127,7 +1034,10 @@ const ProjectKanban = () => {
                       <Loader size={20} className="spinner" />
                     ) : (
                       <>
-                        <Plus size={20} /> Deploy Task
+                        <Plus size={20} />
+                        {taskModalMode === "edit"
+                          ? "Update Task"
+                          : "Deploy Task"}
                       </>
                     )}
                   </button>
@@ -1266,6 +1176,46 @@ const ProjectKanban = () => {
                       resize: "none",
                     }}
                   />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "var(--text-muted)",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Project Manager (Optional)
+                  </label>
+                  <select
+                    value={projectForm.managerId}
+                    onChange={(e) =>
+                      setProjectForm({
+                        ...projectForm,
+                        managerId: e.target.value,
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <option value="">Select manager</option>
+                    {employees
+                      .filter((employee) => employee.userId)
+                      .map((employee) => (
+                        <option key={employee.id} value={employee.userId}>
+                          {employee.name} ({employee.department})
+                        </option>
+                      ))}
+                  </select>
                 </div>
                 <div
                   style={{ display: "flex", gap: "16px", marginTop: "12px" }}

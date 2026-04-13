@@ -101,17 +101,23 @@ const Dashboard = () => {
   const access = user?.access;
   const accessibleModules = getAccessibleModules(access);
 
+  const toNumber = (value) => {
+    const normalized = Number(value);
+    return Number.isFinite(normalized) ? normalized : 0;
+  };
+
   const revenueFlowData =
     erpStats?.performance?.length > 0
       ? erpStats.performance.map((item) => ({
-          label: item.label,
-          value: Number(item.sales) || 0,
+          label: item.label || item.month || item.name || "-",
+          sales: toNumber(item.sales ?? item.revenue ?? item.totalSales),
+          cost: toNumber(item.cost ?? item.expense ?? item.totalCost),
         }))
       : [];
 
   const maxRevenueValue = Math.max(
     1,
-    ...revenueFlowData.map((item) => item.value),
+    ...revenueFlowData.flatMap((item) => [item.sales, item.cost]),
   );
 
   useEffect(() => {
@@ -254,7 +260,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* HRMS Stats */}
+      {/* HR Stats */}
       {(hasModuleAccess(access, "hrms") ||
         hasModuleAccess(access, "employees")) && (
         <div style={{ marginBottom: "40px" }}>
@@ -265,7 +271,7 @@ const Dashboard = () => {
               marginBottom: "16px",
             }}
           >
-            HRMS People Operations
+            HR People Operations
           </h2>
           <div
             style={{
@@ -387,32 +393,96 @@ const Dashboard = () => {
                   width: "100%",
                   display: "flex",
                   alignItems: "flex-end",
-                  gap: "12px",
+                  gap: "10px",
                   paddingBottom: "20px",
                 }}
               >
                 {revenueFlowData.map((item, i) => {
-                  const barHeight =
-                    item.value > 0
-                      ? Math.max((item.value / maxRevenueValue) * 100, 8)
+                  const salesHeight =
+                    item.sales > 0
+                      ? Math.max((item.sales / maxRevenueValue) * 100, 8)
+                      : 2;
+                  const costHeight =
+                    item.cost > 0
+                      ? Math.max((item.cost / maxRevenueValue) * 100, 8)
                       : 2;
                   return (
-                    <motion.div
+                    <div
                       key={`${item.label}-${i}`}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${barHeight}%` }}
-                      transition={{ delay: i * 0.08, duration: 0.7 }}
-                      title={`${item.label}: $${item.value.toLocaleString()}`}
                       style={{
                         flex: 1,
-                        background:
-                          "linear-gradient(to top, var(--primary), #8b5cf6)",
-                        borderRadius: "6px 6px 0 0",
-                        opacity: 0.85,
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: "4px",
+                        height: "100%",
                       }}
-                    />
+                    >
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${salesHeight}%` }}
+                        transition={{ delay: i * 0.08, duration: 0.7 }}
+                        title={`${item.label} Sales: $${item.sales.toLocaleString()}`}
+                        style={{
+                          flex: 1,
+                          background:
+                            "linear-gradient(to top, #0ea5e9, #38bdf8)",
+                          borderRadius: "6px 6px 0 0",
+                          opacity: 0.9,
+                        }}
+                      />
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${costHeight}%` }}
+                        transition={{ delay: i * 0.08 + 0.04, duration: 0.7 }}
+                        title={`${item.label} Cost: $${item.cost.toLocaleString()}`}
+                        style={{
+                          flex: 1,
+                          background:
+                            "linear-gradient(to top, #f43f5e, #fb7185)",
+                          borderRadius: "6px 6px 0 0",
+                          opacity: 0.85,
+                        }}
+                      />
+                    </div>
                   );
                 })}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "18px",
+                  marginBottom: "10px",
+                  color: "var(--text-muted)",
+                  fontSize: "12px",
+                }}
+              >
+                <span
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <span
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "2px",
+                      background: "#38bdf8",
+                    }}
+                  />
+                  Sales
+                </span>
+                <span
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <span
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "2px",
+                      background: "#fb7185",
+                    }}
+                  />
+                  Cost
+                </span>
               </div>
               <div
                 style={{

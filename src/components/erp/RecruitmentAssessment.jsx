@@ -28,6 +28,9 @@ const RecruitmentAssessment = () => {
   const [actionLoading, setActionLoading] = useState(null); // ID of candidate being updated
   const [draggedCandidateId, setDraggedCandidateId] = useState(null);
   const [dragOverPipelineStage, setDragOverPipelineStage] = useState(null);
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
+  const [jobStatusFilter, setJobStatusFilter] = useState("all");
+  const [pipelineJobFilter, setPipelineJobFilter] = useState("all");
 
   const [jobFormData, setJobFormData] = useState({
     title: "",
@@ -240,6 +243,25 @@ const RecruitmentAssessment = () => {
     );
   }
 
+  const normalizedJobSearch = jobSearchTerm.trim().toLowerCase();
+  const filteredJobs = jobs.filter((job) => {
+    const statusMatch =
+      jobStatusFilter === "all" || job.status === jobStatusFilter;
+    const searchMatch =
+      !normalizedJobSearch ||
+      job.title?.toLowerCase().includes(normalizedJobSearch) ||
+      job.department?.toLowerCase().includes(normalizedJobSearch);
+    return statusMatch && searchMatch;
+  });
+
+  const filteredPipelineCandidates = candidates.filter((candidate) => {
+    if (pipelineJobFilter === "all") return true;
+    return candidate.jobId === pipelineJobFilter;
+  });
+  const hasJobFilters =
+    Boolean(normalizedJobSearch) || jobStatusFilter !== "all";
+  const hasPipelineFilters = pipelineJobFilter !== "all";
+
   const renderSubView = () => {
     switch (activeSubView) {
       case "jobs":
@@ -258,33 +280,139 @@ const RecruitmentAssessment = () => {
             >
               <div
                 style={{
-                  position: "relative",
-                  width: "100%",
-                  maxWidth: "300px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  flex: 1,
+                  minWidth: "260px",
                 }}
               >
-                <Search
-                  size={18}
+                <div
                   style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--text-muted)",
+                    display: "flex",
+                    gap: "10px",
+                    flexWrap: "wrap",
+                    alignItems: "flex-end",
                   }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search jobs..."
-                  style={{
-                    width: "100%",
-                    padding: "10px 10px 10px 40px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--input-bg)",
-                    border: "1px solid var(--border)",
-                    color: "white",
-                  }}
-                />
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      width: "100%",
+                      maxWidth: "300px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--text-muted)",
+                        fontWeight: "700",
+                        letterSpacing: "0.4px",
+                      }}
+                    >
+                      SEARCH JOBS
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <Search
+                        size={18}
+                        style={{
+                          position: "absolute",
+                          left: "12px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "var(--text-muted)",
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Title or department..."
+                        value={jobSearchTerm}
+                        onChange={(e) => setJobSearchTerm(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 10px 10px 40px",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--input-bg)",
+                          border: "1px solid var(--border)",
+                          color: "white",
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--text-muted)",
+                        fontWeight: "700",
+                        letterSpacing: "0.4px",
+                      }}
+                    >
+                      FILTER STATUS
+                    </label>
+                    <select
+                      value={jobStatusFilter}
+                      onChange={(e) => setJobStatusFilter(e.target.value)}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        backgroundColor: "var(--input-bg)",
+                        border: "1px solid var(--border)",
+                        color: "white",
+                        fontSize: "13px",
+                        minWidth: "150px",
+                      }}
+                    >
+                      <option value="all">All Statuses</option>
+                      {["Active", "Closed"].map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {hasJobFilters && (
+                    <button
+                      onClick={() => {
+                        setJobSearchTerm("");
+                        setJobStatusFilter("all");
+                      }}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "transparent",
+                        color: "var(--text-muted)",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  Showing:{" "}
+                  <strong>
+                    {jobStatusFilter === "all"
+                      ? "All Statuses"
+                      : jobStatusFilter}
+                  </strong>{" "}
+                  ·{" "}
+                  <strong>
+                    {normalizedJobSearch
+                      ? `Search \"${jobSearchTerm}\"`
+                      : "No Search"}
+                  </strong>
+                </div>
               </div>
               <button
                 className="btn-primary"
@@ -302,7 +430,7 @@ const RecruitmentAssessment = () => {
                 gap: "20px",
               }}
             >
-              {jobs.map((job) => (
+              {filteredJobs.map((job) => (
                 <div
                   key={job.id}
                   className="glass-card"
@@ -403,6 +531,18 @@ const RecruitmentAssessment = () => {
                   </div>
                 </div>
               ))}
+              {jobs.length > 0 && filteredJobs.length === 0 && (
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: "24px",
+                    color: "var(--text-muted)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No jobs match the selected filters.
+                </div>
+              )}
             </div>
           </div>
         );
@@ -410,229 +550,343 @@ const RecruitmentAssessment = () => {
       case "pipeline":
         return (
           <div
-            style={{
-              display: "flex",
-              gap: "20px",
-              overflowX: "auto",
-              paddingBottom: "20px",
-              minHeight: "500px",
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
           >
-            {pipelineStages.map((stage) => (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
               <div
-                key={stage}
                 style={{
-                  minWidth: "260px",
-                  flex: "1 1 260px",
-                  backgroundColor:
-                    dragOverPipelineStage === stage
-                      ? "rgba(14, 165, 233, 0.08)"
-                      : "var(--column-bg)",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  border:
-                    dragOverPipelineStage === stage
-                      ? "1px solid var(--primary)"
-                      : "1px solid var(--border)",
-                  transition:
-                    "border-color 0.2s ease, background-color 0.2s ease",
-                }}
-                onDragOver={(event) => handlePipelineDragOver(event, stage)}
-                onDrop={(event) => handlePipelineDrop(event, stage)}
-                onDragLeave={() => {
-                  if (dragOverPipelineStage === stage) {
-                    setDragOverPipelineStage(null);
-                  }
+                  display: "flex",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  alignItems: "flex-end",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "16px",
+                    flexDirection: "column",
+                    gap: "4px",
                   }}
                 >
-                  <h4
+                  <label
                     style={{
-                      fontSize: "14px",
-                      fontWeight: "700",
+                      fontSize: "11px",
                       color: "var(--text-muted)",
+                      fontWeight: "700",
+                      letterSpacing: "0.4px",
                     }}
                   >
-                    {stage.toUpperCase()}{" "}
-                    <span
-                      style={{
-                        marginLeft: "8px",
-                        padding: "2px 8px",
-                        backgroundColor: "var(--tag-bg)",
-                        borderRadius: "10px",
-                      }}
-                    >
-                      {candidates.filter((c) => c.stage === stage).length}
-                    </span>
-                  </h4>
-                  <Plus
-                    size={16}
-                    style={{ color: "var(--text-muted)", cursor: "pointer" }}
-                    onClick={() => {
-                      setCandidateFormData({ ...candidateFormData, stage });
-                      setIsAddingCandidate(true);
+                    FILTER PIPELINE BY JOB
+                  </label>
+                  <select
+                    value={pipelineJobFilter}
+                    onChange={(e) => setPipelineJobFilter(e.target.value)}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                      fontSize: "13px",
+                      minWidth: "220px",
                     }}
-                  />
+                  >
+                    <option value="all">All Job Roles</option>
+                    {jobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                {hasPipelineFilters && (
+                  <button
+                    onClick={() => setPipelineJobFilter("all")}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "transparent",
+                      color: "var(--text-muted)",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                    }}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                Showing:{" "}
+                <strong>
+                  {pipelineJobFilter === "all"
+                    ? "All Job Roles"
+                    : jobs.find((job) => job.id === pipelineJobFilter)?.title ||
+                      "Selected Job"}
+                </strong>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "20px",
+                overflowX: "auto",
+                paddingBottom: "20px",
+                minHeight: "500px",
+              }}
+            >
+              {pipelineStages.map((stage) => (
                 <div
+                  key={stage}
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
+                    minWidth: "260px",
+                    flex: "1 1 260px",
+                    backgroundColor:
+                      dragOverPipelineStage === stage
+                        ? "rgba(14, 165, 233, 0.08)"
+                        : "var(--column-bg)",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    border:
+                      dragOverPipelineStage === stage
+                        ? "1px solid var(--primary)"
+                        : "1px solid var(--border)",
+                    transition:
+                      "border-color 0.2s ease, background-color 0.2s ease",
+                  }}
+                  onDragOver={(event) => handlePipelineDragOver(event, stage)}
+                  onDrop={(event) => handlePipelineDrop(event, stage)}
+                  onDragLeave={() => {
+                    if (dragOverPipelineStage === stage) {
+                      setDragOverPipelineStage(null);
+                    }
                   }}
                 >
-                  {candidates
-                    .filter((c) => c.stage === stage)
-                    .map((candidate) => (
-                      <div
-                        key={candidate.id}
-                        className="glass-card"
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "700",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      {stage.toUpperCase()}{" "}
+                      <span
                         style={{
-                          padding: "16px",
-                          cursor:
-                            actionLoading === candidate.id
-                              ? "not-allowed"
-                              : "grab",
-                          opacity:
-                            draggedCandidateId === candidate.id ? 0.6 : 1,
+                          marginLeft: "8px",
+                          padding: "2px 8px",
+                          backgroundColor: "var(--tag-bg)",
+                          borderRadius: "10px",
                         }}
-                        draggable={actionLoading !== candidate.id}
-                        onDragStart={(event) =>
-                          handleCandidateDragStart(event, candidate.id)
-                        }
-                        onDragEnd={handleCandidateDragEnd}
                       >
+                        {
+                          filteredPipelineCandidates.filter(
+                            (c) => c.stage === stage,
+                          ).length
+                        }
+                      </span>
+                    </h4>
+                    <Plus
+                      size={16}
+                      style={{ color: "var(--text-muted)", cursor: "pointer" }}
+                      onClick={() => {
+                        setCandidateFormData({ ...candidateFormData, stage });
+                        setIsAddingCandidate(true);
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {candidates
+                      .filter(
+                        (c) =>
+                          pipelineJobFilter === "all" ||
+                          c.jobId === pipelineJobFilter,
+                      )
+                      .filter((c) => c.stage === stage)
+                      .map((candidate) => (
                         <div
+                          key={candidate.id}
+                          className="glass-card"
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            marginBottom: "12px",
+                            padding: "16px",
+                            cursor:
+                              actionLoading === candidate.id
+                                ? "not-allowed"
+                                : "grab",
+                            opacity:
+                              draggedCandidateId === candidate.id ? 0.6 : 1,
                           }}
+                          draggable={actionLoading !== candidate.id}
+                          onDragStart={(event) =>
+                            handleCandidateDragStart(event, candidate.id)
+                          }
+                          onDragEnd={handleCandidateDragEnd}
                         >
                           <div
                             style={{
                               display: "flex",
-                              alignItems: "center",
-                              gap: "12px",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              marginBottom: "12px",
                             }}
                           >
                             <div
                               style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius: "50%",
-                                backgroundColor: "var(--primary)",
-                                color: "white",
                                 display: "flex",
                                 alignItems: "center",
-                                justifyContent: "center",
+                                gap: "12px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "50%",
+                                  backgroundColor: "var(--primary)",
+                                  color: "white",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "12px",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {candidate.name[0]}
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "14px",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  {candidate.name}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "var(--text-muted)",
+                                  }}
+                                >
+                                  {candidate.role}
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() =>
+                                handleDeleteCandidate(candidate.id)
+                              }
+                              disabled={actionLoading === candidate.id}
+                              style={{
+                                color: "var(--text-muted)",
+                                opacity: 0.5,
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.color = "#ef4444")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.color =
+                                  "var(--text-muted)")
+                              }
+                            >
+                              {actionLoading === candidate.id ? (
+                                <Loader size={12} className="spinner" />
+                              ) : (
+                                <XCircle size={14} />
+                              )}
+                            </button>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
                                 fontSize: "12px",
+                                color: "#10b981",
                                 fontWeight: "700",
                               }}
                             >
-                              {candidate.name[0]}
+                              <Star size={12} fill="#10b981" />{" "}
+                              {candidate.score}%
                             </div>
-                            <div>
-                              <div
-                                style={{ fontSize: "14px", fontWeight: "600" }}
-                              >
-                                {candidate.name}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "var(--text-muted)",
-                                }}
-                              >
-                                {candidate.role}
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteCandidate(candidate.id)}
-                            disabled={actionLoading === candidate.id}
-                            style={{ color: "var(--text-muted)", opacity: 0.5 }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.color = "#ef4444")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.color =
-                                "var(--text-muted)")
-                            }
-                          >
-                            {actionLoading === candidate.id ? (
-                              <Loader size={12} className="spinner" />
-                            ) : (
-                              <XCircle size={14} />
-                            )}
-                          </button>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              fontSize: "12px",
-                              color: "#10b981",
-                              fontWeight: "700",
-                            }}
-                          >
-                            <Star size={12} fill="#10b981" /> {candidate.score}%
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            {actionLoading === candidate.id && (
-                              <Loader size={12} className="spinner" />
-                            )}
-                            <select
-                              value={candidate.stage}
-                              disabled={actionLoading === candidate.id}
-                              onChange={(e) =>
-                                handleUpdateStage(candidate.id, e.target.value)
-                              }
+                            <div
                               style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                color: "var(--text-muted)",
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                outline: "none",
-                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
                               }}
                             >
-                              {pipelineStages.map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
+                              {actionLoading === candidate.id && (
+                                <Loader size={12} className="spinner" />
+                              )}
+                              <select
+                                value={candidate.stage}
+                                disabled={actionLoading === candidate.id}
+                                onChange={(e) =>
+                                  handleUpdateStage(
+                                    candidate.id,
+                                    e.target.value,
+                                  )
+                                }
+                                style={{
+                                  backgroundColor: "transparent",
+                                  border: "none",
+                                  color: "var(--text-muted)",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                  outline: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {pipelineStages.map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    {filteredPipelineCandidates.filter((c) => c.stage === stage)
+                      .length === 0 && (
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                          padding: "8px 4px",
+                        }}
+                      >
+                        No candidates
                       </div>
-                    ))}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
 
@@ -727,7 +981,7 @@ const RecruitmentAssessment = () => {
                   Create Job Posting
                 </h3>
                 <button onClick={() => setIsAddingJob(false)}>
-                  <XCircle size={20} />
+                  <XCircle size={20} style={{ color: "white" }} />
                 </button>
               </div>
               <form
@@ -824,7 +1078,7 @@ const RecruitmentAssessment = () => {
                   Add Candidate
                 </h3>
                 <button onClick={() => setIsAddingCandidate(false)}>
-                  <XCircle size={20} />
+                  <XCircle size={20} style={{ color: "white" }} />
                 </button>
               </div>
               <form

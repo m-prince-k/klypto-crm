@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Users2,
-  Mail,
-  Phone,
-  Building2,
   UserCheck,
   Pencil,
   Trash2,
@@ -12,6 +9,7 @@ import {
   Loader,
   Clock,
   UserMinus,
+  Search,
 } from "lucide-react";
 import apiClient from "../../api/apiClient";
 
@@ -25,6 +23,9 @@ const EmployeeMaster = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -41,7 +42,9 @@ const EmployeeMaster = () => {
       setEmployees(response.data);
     } catch (err) {
       setError(
-        err.response?.data?.message || err.message || "Failed to load employees",
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load employees",
       );
     } finally {
       setLoading(false);
@@ -96,7 +99,12 @@ const EmployeeMaster = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.code || !formData.role || !formData.department) {
+    if (
+      !formData.name ||
+      !formData.code ||
+      !formData.role ||
+      !formData.department
+    ) {
       setError("Please fill out all required fields.");
       return;
     }
@@ -135,60 +143,77 @@ const EmployeeMaster = () => {
       fetchEmployees();
     } catch (err) {
       setError(
-        err.response?.data?.message || err.message || "Failed to delete employee",
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to delete employee",
       );
     }
   };
 
+  const availableDepartments = Array.from(
+    new Set(employees.map((employee) => employee.department).filter(Boolean)),
+  );
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredEmployees = employees.filter((employee) => {
+    const statusMatch =
+      statusFilter === "all" || employee.status === statusFilter;
+    const departmentMatch =
+      departmentFilter === "all" || employee.department === departmentFilter;
+    const searchMatch =
+      !normalizedSearch ||
+      employee.name?.toLowerCase().includes(normalizedSearch) ||
+      employee.code?.toLowerCase().includes(normalizedSearch) ||
+      employee.role?.toLowerCase().includes(normalizedSearch);
+    return statusMatch && departmentMatch && searchMatch;
+  });
+  const hasActiveFilters =
+    Boolean(normalizedSearch) ||
+    statusFilter !== "all" ||
+    departmentFilter !== "all";
+
   return (
     <div style={{ display: "grid", gap: "24px", position: "relative" }}>
-      <div className="glass-card" style={{ padding: "24px" }}>
-        <h3
-          style={{
-            fontSize: "18px",
-            fontWeight: "700",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Users2 size={18} /> Employee Master Summary
-        </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {(() => {
-            const activeCount = employees.filter(e => e.status === "Active").length;
-            const onboardingCount = employees.filter(e => e.status === "Onboarding").length;
-            const inactiveCount = employees.filter(e => e.status === "Inactive").length;
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+        }}
+      >
+        {() => {
+          const activeCount = employees.filter(
+            (e) => e.status === "Active",
+          ).length;
+          const onboardingCount = employees.filter(
+            (e) => e.status === "Onboarding",
+          ).length;
+          const inactiveCount = employees.filter(
+            (e) => e.status === "Inactive",
+          ).length;
 
-            return [
-              {
-                label: "Total Employees",
-                value: employees.length.toString(),
-                icon: <Users2 size={16} />,
-              },
-              {
-                label: "Active Employees",
-                value: activeCount.toString(),
-                icon: <UserCheck size={16} />,
-              },
-              {
-                label: "Onboarding",
-                value: onboardingCount.toString(),
-                icon: <Clock size={16} />,
-              },
-              {
-                label: "Inactive",
-                value: inactiveCount.toString(),
-                icon: <UserMinus size={16} />,
-              },
-            ].map((field) => (
+          return [
+            {
+              label: "Total Employees",
+              value: employees.length.toString(),
+              icon: <Users2 size={16} />,
+            },
+            {
+              label: "Active Employees",
+              value: activeCount.toString(),
+              icon: <UserCheck size={16} />,
+            },
+            {
+              label: "Onboarding",
+              value: onboardingCount.toString(),
+              icon: <Clock size={16} />,
+            },
+            {
+              label: "Inactive",
+              value: inactiveCount.toString(),
+              icon: <UserMinus size={16} />,
+            },
+          ].map((field) => (
             <div
               key={field.label}
               style={{
@@ -215,8 +240,8 @@ const EmployeeMaster = () => {
                 {field.value}
               </div>
             </div>
-          ))})}
-        </div>
+          ));
+        }}
       </div>
 
       <div className="glass-card" style={{ padding: "24px" }}>
@@ -257,14 +282,186 @@ const EmployeeMaster = () => {
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "16px",
+            gap: "12px",
+            flexWrap: "wrap",
           }}
         >
           <h3 style={{ fontSize: "18px", fontWeight: "700" }}>
-            Employee Directory
+            Employee Directory ({filteredEmployees.length})
           </h3>
           <button className="btn-primary" onClick={() => handleOpenModal()}>
             <PlusCircle size={14} style={{ marginRight: "6px" }} /> Add Employee
           </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            marginBottom: "16px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              alignItems: "flex-end",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                minWidth: "220px",
+                flex: "1 1 220px",
+              }}
+            >
+              <label
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  fontWeight: "700",
+                  letterSpacing: "0.4px",
+                }}
+              >
+                SEARCH EMPLOYEE
+              </label>
+              <div style={{ position: "relative" }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-muted)",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Name, code, role..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 10px 10px 34px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                    fontSize: "13px",
+                  }}
+                />
+              </div>
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+            >
+              <label
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  fontWeight: "700",
+                  letterSpacing: "0.4px",
+                }}
+              >
+                FILTER STATUS
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  backgroundColor: "var(--input-bg)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-main)",
+                  fontSize: "13px",
+                  minWidth: "160px",
+                }}
+              >
+                <option value="all">All Statuses</option>
+                {["Active", "Onboarding", "Inactive"].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+            >
+              <label
+                style={{
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  fontWeight: "700",
+                  letterSpacing: "0.4px",
+                }}
+              >
+                FILTER DEPARTMENT
+              </label>
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  backgroundColor: "var(--input-bg)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-main)",
+                  fontSize: "13px",
+                  minWidth: "180px",
+                }}
+              >
+                <option value="all">All Departments</option>
+                {availableDepartments.map((department) => (
+                  <option key={department} value={department}>
+                    {department}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setDepartmentFilter("all");
+                }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "transparent",
+                  color: "var(--text-muted)",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+            Showing:{" "}
+            <strong>
+              {statusFilter === "all" ? "All Statuses" : statusFilter}
+            </strong>{" "}
+            ·{" "}
+            <strong>
+              {departmentFilter === "all"
+                ? "All Departments"
+                : departmentFilter}
+            </strong>{" "}
+            ·{" "}
+            <strong>
+              {normalizedSearch ? `Search \"${searchTerm}\"` : "No Search"}
+            </strong>
+          </div>
         </div>
 
         {loading ? (
@@ -290,9 +487,20 @@ const EmployeeMaster = () => {
           >
             No employees found. Add some to get started.
           </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div
+            style={{
+              padding: "30px",
+              textAlign: "center",
+              color: "var(--text-muted)",
+              fontStyle: "italic",
+            }}
+          >
+            No employees match the selected filters.
+          </div>
         ) : (
           <div style={{ display: "grid", gap: "12px" }}>
-            {employees.map((employee) => (
+            {filteredEmployees.map((employee) => (
               <div
                 key={employee.id}
                 style={{
@@ -417,7 +625,7 @@ const EmployeeMaster = () => {
                   cursor: "pointer",
                 }}
               >
-                <X size={20} />
+                <X size={20} style={{ color: "white" }} />
               </button>
             </div>
 
@@ -437,7 +645,10 @@ const EmployeeMaster = () => {
               </div>
             )}
 
-            <form onSubmit={handleSave} style={{ display: "grid", gap: "16px" }}>
+            <form
+              onSubmit={handleSave}
+              style={{ display: "grid", gap: "16px" }}
+            >
               <div>
                 <label
                   style={{
@@ -583,9 +794,33 @@ const EmployeeMaster = () => {
                     fontSize: "14px",
                   }}
                 >
-                  <option value="Active" style={{ backgroundColor: "var(--bg-dark)", color: "var(--text-main)" }}>Active</option>
-                  <option value="Onboarding" style={{ backgroundColor: "var(--bg-dark)", color: "var(--text-main)" }}>Onboarding</option>
-                  <option value="Inactive" style={{ backgroundColor: "var(--bg-dark)", color: "var(--text-main)" }}>Inactive</option>
+                  <option
+                    value="Active"
+                    style={{
+                      backgroundColor: "var(--bg-dark)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Active
+                  </option>
+                  <option
+                    value="Onboarding"
+                    style={{
+                      backgroundColor: "var(--bg-dark)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Onboarding
+                  </option>
+                  <option
+                    value="Inactive"
+                    style={{
+                      backgroundColor: "var(--bg-dark)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    Inactive
+                  </option>
                 </select>
               </div>
 

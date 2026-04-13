@@ -24,6 +24,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
 import apiClient from "../api/apiClient";
 
 // ── Role definitions ────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ const ROLES = [
   {
     id: "HR",
     label: "HR",
-    description: "HRMS, employees & leave",
+    description: "HR, employees & leave",
     icon: User,
     color: "#10b981",
   },
@@ -235,6 +236,8 @@ const UserManagement = () => {
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [roleFilter, setRoleFilter] = useState("All");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -289,6 +292,7 @@ const UserManagement = () => {
     const pwd = generatePassword();
     setFormData((prev) => ({ ...prev, password: pwd }));
     setShowPassword(true);
+    toast.info("Password generated");
   };
 
   // ── Create user ────────────────────────────────────────────────────────────
@@ -316,10 +320,10 @@ const UserManagement = () => {
       });
       fetchUsers();
     } catch (err) {
-      setError(
+      const message =
         err.response?.data?.message ||
-          "Failed to create user. Please try again.",
-      );
+        "Failed to create user. Please try again.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -345,6 +349,19 @@ const UserManagement = () => {
   // ── Stats ──────────────────────────────────────────────────────────────────
   const activeCount = users.filter((u) => u.isActive).length;
   const inactiveCount = users.length - activeCount;
+  const availableRoles = [
+    "All",
+    ...new Set((users || []).flatMap((u) => u.roles || [])),
+  ];
+  const filteredUsers = users.filter((listedUser) => {
+    const statusMatch =
+      statusFilter === "All" ||
+      (statusFilter === "Active" ? listedUser.isActive : !listedUser.isActive);
+    const roleMatch =
+      roleFilter === "All" || (listedUser.roles || []).includes(roleFilter);
+    return statusMatch && roleMatch;
+  });
+  const hasActiveFilters = statusFilter !== "All" || roleFilter !== "All";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
@@ -454,11 +471,133 @@ const UserManagement = () => {
         className="glass-card"
         style={{ padding: "24px", overflowX: "auto" }}
       >
-        <h3
-          style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px" }}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "20px",
+          }}
         >
-          All Users
-        </h3>
+          <h3
+            style={{ fontSize: "16px", fontWeight: "700", marginBottom: "0" }}
+          >
+            All Users ({filteredUsers.length}/{users.length})
+          </h3>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              minWidth: "280px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                flexWrap: "wrap",
+                alignItems: "flex-end",
+              }}
+            >
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+              >
+                <label
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    fontWeight: "700",
+                    letterSpacing: "0.4px",
+                  }}
+                >
+                  FILTER BY STATUS
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    minWidth: "160px",
+                  }}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active Only</option>
+                  <option value="Inactive">Inactive Only</option>
+                </select>
+              </div>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+              >
+                <label
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    fontWeight: "700",
+                    letterSpacing: "0.4px",
+                  }}
+                >
+                  FILTER BY ROLE
+                </label>
+                <select
+                  value={roleFilter}
+                  onChange={(event) => setRoleFilter(event.target.value)}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    minWidth: "160px",
+                  }}
+                >
+                  {availableRoles.map((roleOption) => (
+                    <option key={roleOption} value={roleOption}>
+                      {roleOption === "All" ? "All Roles" : roleOption}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    setStatusFilter("All");
+                    setRoleFilter("All");
+                  }}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    backgroundColor: "transparent",
+                    color: "var(--text-muted)",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+              Showing:{" "}
+              <strong>
+                {statusFilter === "All" ? "All Statuses" : statusFilter}
+              </strong>{" "}
+              ·{" "}
+              <strong>{roleFilter === "All" ? "All Roles" : roleFilter}</strong>
+            </div>
+          </div>
+        </div>
 
         {loading ? (
           <div
@@ -471,7 +610,7 @@ const UserManagement = () => {
           >
             <Loader size={32} className="spinner" />
           </div>
-        ) : users.length === 0 ? (
+        ) : filteredUsers.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -480,7 +619,7 @@ const UserManagement = () => {
             }}
           >
             <UserCog size={40} style={{ opacity: 0.3, marginBottom: "12px" }} />
-            <p>No users yet. Create the first employee account.</p>
+            <p>No users found for selected filters.</p>
           </div>
         ) : (
           <table
@@ -519,7 +658,7 @@ const UserManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <motion.tr
                   key={user.id}
                   initial={{ opacity: 0, y: 8 }}

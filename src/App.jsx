@@ -16,7 +16,7 @@ import ERP from "./pages/ERP";
 import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
 import GrievanceManagement from "./components/erp/GrievanceManagement";
 import Payroll from "./components/erp/Payroll";
-import HRMS from "./pages/HRMS";
+import HR from "./pages/HRMS";
 import EmployeePortal from "./pages/EmployeePortal";
 import Leave from "./pages/Leave";
 import Login from "./pages/Login";
@@ -27,6 +27,7 @@ import { usePageSEO } from "./hooks/usePageSEO";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { restoreAuth } from "./store/auth/authSlice";
 import { useState } from "react";
+import { Toaster } from "sonner";
 import "./index.css";
 
 const SEOHelper = () => {
@@ -147,7 +148,7 @@ function AppLayout() {
             <Route
               path="/hrms"
               element={
-                <ProtectedRoute Component={HRMS} requiredModules={["hrms"]} />
+                <ProtectedRoute Component={HR} requiredModules={["hrms"]} />
               }
             />
             <Route
@@ -215,6 +216,19 @@ function App() {
   return (
     <Router>
       <SEOHelper />
+      <Toaster
+        richColors
+        position="top-right"
+        expand
+        closeButton
+        toastOptions={{
+          style: {
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            color: "var(--text-main)",
+          },
+        }}
+      />
       <Routes>
         {/* Auth Routes - not protected */}
         <Route path="/login" element={<Login />} />

@@ -243,11 +243,17 @@ const RolesAccess = () => {
     setRbacSuccess(null);
 
     try {
-      await apiClient.patch(`/rbac/roles/${roleId}`, {
-        name: editingRoleName.trim(),
+      const roleBeingEdited = rbacRoles.find((role) => role.id === roleId);
+      const updatePayload = {
         description: editingRoleDescription.trim(),
         dashboardModules: editingRoleModules,
-      });
+      };
+
+      if (!roleBeingEdited?.isSystem) {
+        updatePayload.name = editingRoleName.trim();
+      }
+
+      await apiClient.patch(`/rbac/roles/${roleId}`, updatePayload);
 
       setRbacSuccess(
         `Role ${editingRoleName.trim().toUpperCase()} updated successfully.`,
@@ -593,6 +599,17 @@ const RolesAccess = () => {
                           fontSize: "13px",
                         }}
                       />
+                      {role.isSystem ? (
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          System role name is locked. You can still update
+                          description and module access.
+                        </div>
+                      ) : null}
                       <input
                         type="text"
                         value={editingRoleDescription}

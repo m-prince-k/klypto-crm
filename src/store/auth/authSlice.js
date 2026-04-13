@@ -1,6 +1,30 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authService } from "./authService";
 
+const getValidToken = (value) => {
+  if (!value || typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (!normalized || normalized === "null" || normalized === "undefined") {
+    return null;
+  }
+  return normalized;
+};
+
+const accessTokenFromStorage = getValidToken(
+  localStorage.getItem("accessToken"),
+);
+const refreshTokenFromStorage = getValidToken(
+  localStorage.getItem("refreshToken"),
+);
+
+if (!accessTokenFromStorage) {
+  localStorage.removeItem("accessToken");
+}
+
+if (!refreshTokenFromStorage) {
+  localStorage.removeItem("refreshToken");
+}
+
 /**
  * SIGNUP THUNK: Register a new user with role-based signup
  */
@@ -10,8 +34,15 @@ export const signupUser = createAsyncThunk(
     try {
       const response = await authService.signup(signupData);
       // Store tokens in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
+      const accessToken = getValidToken(response?.accessToken);
+      const refreshToken = getValidToken(response?.refreshToken);
+
+      if (!accessToken || !refreshToken) {
+        throw new Error("Invalid authentication tokens received");
+      }
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
       return response;
     } catch (error) {
       return rejectWithValue(
@@ -30,8 +61,15 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await authService.login(credentials);
       // Store tokens in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
+      const accessToken = getValidToken(response?.accessToken);
+      const refreshToken = getValidToken(response?.refreshToken);
+
+      if (!accessToken || !refreshToken) {
+        throw new Error("Invalid authentication tokens received");
+      }
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
       return response;
     } catch (error) {
       return rejectWithValue(
@@ -67,8 +105,13 @@ export const refreshAccessToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.refreshTokens();
-      localStorage.setItem("accessToken", response.accessToken);
-      if (response.refreshToken) {
+      const accessToken = getValidToken(response?.accessToken);
+      if (!accessToken) {
+        throw new Error("Invalid access token received");
+      }
+
+      localStorage.setItem("accessToken", accessToken);
+      if (getValidToken(response?.refreshToken)) {
         localStorage.setItem("refreshToken", response.refreshToken);
       }
       return response;
@@ -100,12 +143,12 @@ export const fetchUserProfile = createAsyncThunk(
 
 // Initial state
 const initialState = {
-  accessToken: localStorage.getItem("accessToken") || null,
-  refreshToken: localStorage.getItem("refreshToken") || null,
+  accessToken: accessTokenFromStorage,
+  refreshToken: refreshTokenFromStorage,
   user: null, // { id, email, fullName, organization, roles, isActive, createdAt }
   roles: [], // User roles array
   primaryRole: null, // Primary/first role
-  isAuthenticated: !!localStorage.getItem("accessToken"),
+  isAuthenticated: !!accessTokenFromStorage,
   loading: false,
   error: null,
 };
@@ -140,12 +183,19 @@ const authSlice = createSlice({
      * Restore auth from tokens (for app initialization)
      */
     restoreAuth: (state) => {
-      const accessToken = localStorage.getItem("accessToken");
-      const refreshToken = localStorage.getItem("refreshToken");
+      const accessToken = getValidToken(localStorage.getItem("accessToken"));
+      const refreshToken = getValidToken(localStorage.getItem("refreshToken"));
       if (accessToken) {
         state.accessToken = accessToken;
         state.refreshToken = refreshToken;
         state.isAuthenticated = true;
+      } else {
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.user = null;
+        state.roles = [];
+        state.primaryRole = null;
+        state.isAuthenticated = false;
       }
     },
   },

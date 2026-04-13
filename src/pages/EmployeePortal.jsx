@@ -11,6 +11,7 @@ import {
   AlertCircle,
   ClipboardList,
 } from "lucide-react";
+import { toast } from "sonner";
 import apiClient from "../api/apiClient";
 
 const initialLeaveForm = {
@@ -19,7 +20,6 @@ const initialLeaveForm = {
   endDate: "",
   reason: "",
 };
-
 const initialComplaintForm = {
   subject: "",
   category: "General",
@@ -80,6 +80,9 @@ const EmployeePortal = () => {
 
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState("All");
+  const [complaintStatusFilter, setComplaintStatusFilter] = useState("All");
+  const [taskStatusFilter, setTaskStatusFilter] = useState("All");
 
   const todayIsoDate = useMemo(() => {
     const now = new Date();
@@ -152,9 +155,12 @@ const EmployeePortal = () => {
       setAssignedTasks(tasksRes.data || []);
       setMyProjects(projectsRes.data || []);
     } catch (fetchError) {
-      setError(
+      const message =
         fetchError.response?.data?.message ||
-          "Failed to load employee portal data",
+        "Failed to load employee portal data";
+      setError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
       );
     } finally {
       setLoading(false);
@@ -180,9 +186,14 @@ const EmployeePortal = () => {
         checkIn: new Date().toISOString(),
       });
       setSuccessMessage("Check-in recorded successfully.");
+      toast.success("Check-in recorded successfully");
       await fetchEmployeeData();
     } catch (checkInError) {
-      setError(checkInError.response?.data?.message || "Check-in failed");
+      const message = checkInError.response?.data?.message || "Check-in failed";
+      setError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
+      );
     } finally {
       setActionLoading("");
     }
@@ -194,11 +205,13 @@ const EmployeePortal = () => {
 
     if (!leaveForm.startDate || !leaveForm.endDate) {
       setError("Please select both start and end date for leave.");
+      toast.error("Please select both start and end date for leave");
       return;
     }
 
     if (new Date(leaveForm.endDate) < new Date(leaveForm.startDate)) {
       setError("Leave end date cannot be before start date.");
+      toast.error("Leave end date cannot be before start date");
       return;
     }
 
@@ -216,9 +229,15 @@ const EmployeePortal = () => {
       });
       setLeaveForm(initialLeaveForm);
       setSuccessMessage("Leave request submitted.");
+      toast.success("Leave request submitted");
       await fetchEmployeeData();
     } catch (leaveError) {
-      setError(leaveError.response?.data?.message || "Leave request failed");
+      const message =
+        leaveError.response?.data?.message || "Leave request failed";
+      setError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
+      );
     } finally {
       setActionLoading("");
     }
@@ -230,6 +249,7 @@ const EmployeePortal = () => {
 
     if (!complaintForm.subject.trim() || !complaintForm.description.trim()) {
       setError("Subject and complaint description are required.");
+      toast.error("Subject and complaint description are required");
       return;
     }
 
@@ -247,10 +267,14 @@ const EmployeePortal = () => {
       });
       setComplaintForm(initialComplaintForm);
       setSuccessMessage("Complaint submitted successfully.");
+      toast.success("Complaint submitted successfully");
       await fetchEmployeeData();
     } catch (complaintError) {
-      setError(
-        complaintError.response?.data?.message || "Complaint submission failed",
+      const message =
+        complaintError.response?.data?.message || "Complaint submission failed";
+      setError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
       );
     } finally {
       setActionLoading("");
@@ -264,9 +288,15 @@ const EmployeePortal = () => {
     try {
       await apiClient.patch(`/projects/tasks/${taskId}`, { status });
       setSuccessMessage("Task status updated.");
+      toast.success("Task status updated");
       await fetchEmployeeData();
     } catch (taskError) {
-      setError(taskError.response?.data?.message || "Failed to update task");
+      const message =
+        taskError.response?.data?.message || "Failed to update task";
+      setError(message);
+      toast.error(
+        Array.isArray(message) ? message.join(", ") : String(message),
+      );
     } finally {
       setActionLoading("");
     }
@@ -281,6 +311,18 @@ const EmployeePortal = () => {
     actionLoading === "complaint" ||
     !complaintForm.subject.trim() ||
     !complaintForm.description.trim();
+  const filteredLeaveRequests = leaveRequests.filter(
+    (leave) =>
+      leaveStatusFilter === "All" || leave.status === leaveStatusFilter,
+  );
+  const filteredComplaints = complaints.filter(
+    (complaint) =>
+      complaintStatusFilter === "All" ||
+      complaint.status === complaintStatusFilter,
+  );
+  const filteredAssignedTasks = assignedTasks.filter(
+    (task) => taskStatusFilter === "All" || task.status === taskStatusFilter,
+  );
 
   if (loading) {
     return (
@@ -568,9 +610,49 @@ const EmployeePortal = () => {
                   marginTop: "12px",
                   fontSize: "13px",
                   color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
-                My leave requests: {leaveRequests.length}
+                <span>
+                  My leave requests: {filteredLeaveRequests.length} /{" "}
+                  {leaveRequests.length}
+                </span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      letterSpacing: "0.4px",
+                    }}
+                  >
+                    FILTER LEAVE STATUS
+                  </span>
+                  <select
+                    value={leaveStatusFilter}
+                    onChange={(event) =>
+                      setLeaveStatusFilter(event.target.value)
+                    }
+                    style={{
+                      padding: "6px 8px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-main)",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Pending">Pending Only</option>
+                    <option value="Approved">Approved Only</option>
+                    <option value="Rejected">Rejected Only</option>
+                  </select>
+                </div>
               </div>
 
               <div
@@ -582,7 +664,7 @@ const EmployeePortal = () => {
                   overflowY: "auto",
                 }}
               >
-                {leaveRequests.slice(0, 6).map((leave) => (
+                {filteredLeaveRequests.slice(0, 6).map((leave) => (
                   <div
                     key={leave.id}
                     style={{
@@ -743,9 +825,50 @@ const EmployeePortal = () => {
                   marginTop: "12px",
                   fontSize: "13px",
                   color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
-                My complaints: {complaints.length}
+                <span>
+                  My complaints: {filteredComplaints.length} /{" "}
+                  {complaints.length}
+                </span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      letterSpacing: "0.4px",
+                    }}
+                  >
+                    FILTER COMPLAINT STATUS
+                  </span>
+                  <select
+                    value={complaintStatusFilter}
+                    onChange={(event) =>
+                      setComplaintStatusFilter(event.target.value)
+                    }
+                    style={{
+                      padding: "6px 8px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-main)",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Open">Open Only</option>
+                    <option value="In Review">In Review Only</option>
+                    <option value="Escalated">Escalated Only</option>
+                    <option value="Resolved">Resolved Only</option>
+                  </select>
+                </div>
               </div>
 
               <div
@@ -757,7 +880,7 @@ const EmployeePortal = () => {
                   overflowY: "auto",
                 }}
               >
-                {complaints.slice(0, 6).map((complaint) => (
+                {filteredComplaints.slice(0, 6).map((complaint) => (
                   <div
                     key={complaint.id}
                     style={{
@@ -824,10 +947,48 @@ const EmployeePortal = () => {
                 fontSize: "13px",
                 color: "var(--text-muted)",
                 marginBottom: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px",
+                flexWrap: "wrap",
               }}
             >
-              Assigned tasks: {assignedTasks.length} · Projects:{" "}
-              {myProjects.length}
+              <span>
+                Assigned tasks: {filteredAssignedTasks.length} /{" "}
+                {assignedTasks.length} · Projects: {myProjects.length}
+              </span>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    letterSpacing: "0.4px",
+                  }}
+                >
+                  FILTER TASK STATUS
+                </span>
+                <select
+                  value={taskStatusFilter}
+                  onChange={(event) => setTaskStatusFilter(event.target.value)}
+                  style={{
+                    padding: "6px 8px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-main)",
+                    fontSize: "12px",
+                  }}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="todo">Todo</option>
+                  <option value="inprogress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
             </div>
 
             <div
@@ -838,12 +999,12 @@ const EmployeePortal = () => {
                 overflowY: "auto",
               }}
             >
-              {assignedTasks.length === 0 ? (
+              {filteredAssignedTasks.length === 0 ? (
                 <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                  No assigned tasks yet.
+                  No assigned tasks found for selected filter.
                 </div>
               ) : (
-                assignedTasks.map((task) => (
+                filteredAssignedTasks.map((task) => (
                   <div
                     key={task.id}
                     style={{

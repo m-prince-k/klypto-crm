@@ -206,7 +206,7 @@ const LeadSidePanel = ({ leadId, onClose, onUpdate }) => {
       >
         <h2 style={{ fontSize: "18px", fontWeight: "700" }}>Lead Profile</h2>
         <button onClick={onClose} style={{ color: "var(--text-muted)" }}>
-          <X size={20} />
+          <X size={20} style={{ color: "white" }} />
         </button>
       </div>
 
@@ -697,7 +697,7 @@ const Leads = () => {
                 Create New Lead
               </h3>
               <button onClick={() => setShowAddModal(false)}>
-                <X size={20} />
+                <X size={20} style={{ color: "white" }} />
               </button>
             </div>
             <form

@@ -9,7 +9,9 @@ export const authService = {
    * Register a new user with email, password, name, and organization
    */
   signup: async (signupData) => {
-    const response = await apiClient.post("/auth/signup", signupData);
+    const response = await apiClient.post("/auth/signup", signupData, {
+      successMessage: "Account created successfully",
+    });
     return response.data;
   },
 
@@ -18,7 +20,9 @@ export const authService = {
    * Login with email and password
    */
   login: async (credentials) => {
-    const response = await apiClient.post("/auth/login", credentials);
+    const response = await apiClient.post("/auth/login", credentials, {
+      successMessage: "Login successful",
+    });
     return response.data;
   },
 
@@ -27,7 +31,9 @@ export const authService = {
    * Logout and invalidate refresh token
    */
   logout: async () => {
-    const response = await apiClient.post("/auth/logout");
+    const response = await apiClient.post("/auth/logout", null, {
+      successMessage: "Logged out successfully",
+    });
     return response.data;
   },
 
@@ -40,8 +46,11 @@ export const authService = {
     if (!refreshToken) {
       throw new Error("No refresh token available");
     }
-    const response = await apiClient.post("/auth/refresh", {
-      refreshToken,
+    const response = await apiClient.post("/auth/refresh", null, {
+      toast: false,
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
     });
     return response.data;
   },

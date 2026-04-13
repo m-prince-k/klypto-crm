@@ -54,7 +54,7 @@ const TabContent = ({ title, children, showAdd = true }) => (
   </motion.div>
 );
 
-const HRMS = ({ initialTab = "overview" }) => {
+const HR = ({ initialTab = "overview" }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialTab);
   const tabNavRef = useRef(null);
@@ -146,7 +146,7 @@ const HRMS = ({ initialTab = "overview" }) => {
           <h1
             style={{ fontSize: "32px", fontWeight: "800", marginBottom: "4px" }}
           >
-            HRMS Portal
+            HR Portal
           </h1>
           <p style={{ color: "var(--text-muted)" }}>
             Manage people operations, attendance, leave, payroll, and employee
@@ -250,13 +250,13 @@ const HRMS = ({ initialTab = "overview" }) => {
           )}
 
           {activeTab === "leave" && (
-            <TabContent key="leave" title="Leave Management" showAdd={false}>
+            <TabContent key="leave" showAdd={false}>
               <LeaveManagement />
             </TabContent>
           )}
 
           {activeTab === "payroll" && (
-            <TabContent key="payroll" title="Payroll Structure" showAdd={false}>
+            <TabContent key="payroll" showAdd={false}>
               <PayrollStructure />
             </TabContent>
           )}
@@ -264,17 +264,15 @@ const HRMS = ({ initialTab = "overview" }) => {
           {activeTab === "performance" && (
             <TabContent
               key="performance"
-              title="Performance Reviews"
               showAdd={false}
             >
               <PerformanceReviews />
             </TabContent>
           )}
-
         </AnimatePresence>
       </main>
     </div>
   );
 };
 
-export default HRMS;
+export default HR;
