@@ -85,12 +85,22 @@ export const DEFAULT_ROLE_MODULES = {
   MANAGER: [
     "dashboard",
     "leads",
+    "erp",
     "recruitment",
     "grievances",
     "leave",
     "settings",
   ],
-  HR: ["dashboard", "hrms", "employees", "leave", "settings"],
+  HR: [
+    "dashboard",
+    "erp",
+    "hrms",
+    "employees",
+    "leave",
+    "payroll",
+    "users",
+    "settings",
+  ],
   EMPLOYEE: ["dashboard", "employees", "leave", "grievances", "settings"],
 };
 

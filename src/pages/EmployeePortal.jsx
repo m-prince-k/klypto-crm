@@ -9,6 +9,7 @@ import {
   Loader,
   CheckCircle2,
   AlertCircle,
+  ClipboardList,
 } from "lucide-react";
 import apiClient from "../api/apiClient";
 
@@ -71,6 +72,8 @@ const EmployeePortal = () => {
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [assignedTasks, setAssignedTasks] = useState([]);
+  const [myProjects, setMyProjects] = useState([]);
 
   const [leaveForm, setLeaveForm] = useState(initialLeaveForm);
   const [complaintForm, setComplaintForm] = useState(initialComplaintForm);
@@ -110,6 +113,8 @@ const EmployeePortal = () => {
         payrollRes,
         leaveRes,
         grievanceRes,
+        tasksRes,
+        projectsRes,
       ] = await Promise.all([
         apiClient.get("/employees"),
         apiClient.get(`/attendance?date=${todayIsoDate}`),
@@ -117,6 +122,8 @@ const EmployeePortal = () => {
         apiClient.get("/payroll/records"),
         apiClient.get("/leaves"),
         apiClient.get("/grievances"),
+        apiClient.get("/projects/tasks"),
+        apiClient.get("/projects"),
       ]);
 
       const employeeRecord =
@@ -142,6 +149,8 @@ const EmployeePortal = () => {
       setPayrollRecords(payrollHistory);
       setLeaveRequests(myLeaves);
       setComplaints(myComplaints);
+      setAssignedTasks(tasksRes.data || []);
+      setMyProjects(projectsRes.data || []);
     } catch (fetchError) {
       setError(
         fetchError.response?.data?.message ||
@@ -243,6 +252,21 @@ const EmployeePortal = () => {
       setError(
         complaintError.response?.data?.message || "Complaint submission failed",
       );
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleTaskStatusUpdate = async (taskId, status) => {
+    setActionLoading(`task-${taskId}`);
+    setError("");
+    setSuccessMessage("");
+    try {
+      await apiClient.patch(`/projects/tasks/${taskId}`, { status });
+      setSuccessMessage("Task status updated.");
+      await fetchEmployeeData();
+    } catch (taskError) {
+      setError(taskError.response?.data?.message || "Failed to update task");
     } finally {
       setActionLoading("");
     }
@@ -779,6 +803,141 @@ const EmployeePortal = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="glass-card" style={{ padding: "18px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "14px",
+              }}
+            >
+              <ClipboardList size={18} />
+              <h3 style={{ fontWeight: "700" }}>My Projects & Tasks</h3>
+            </div>
+
+            <div
+              style={{
+                fontSize: "13px",
+                color: "var(--text-muted)",
+                marginBottom: "12px",
+              }}
+            >
+              Assigned tasks: {assignedTasks.length} · Projects:{" "}
+              {myProjects.length}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: "10px",
+                maxHeight: "260px",
+                overflowY: "auto",
+              }}
+            >
+              {assignedTasks.length === 0 ? (
+                <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+                  No assigned tasks yet.
+                </div>
+              ) : (
+                assignedTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      padding: "10px",
+                      display: "grid",
+                      gap: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "10px",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: "13px", fontWeight: "700" }}>
+                          {task.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          {task.project?.name || "Project"} · {task.priority}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          ...getStatusStyle(
+                            task.status === "done"
+                              ? "Resolved"
+                              : task.status === "review"
+                                ? "In Review"
+                                : "Open",
+                          ),
+                        }}
+                      >
+                        {task.status}
+                      </span>
+                    </div>
+                    <div
+                      style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                    >
+                      {task.status !== "inprogress" &&
+                        task.status !== "done" && (
+                          <button
+                            className="btn-secondary"
+                            onClick={() =>
+                              handleTaskStatusUpdate(task.id, "inprogress")
+                            }
+                            disabled={actionLoading === `task-${task.id}`}
+                            style={{ padding: "6px 10px", fontSize: "12px" }}
+                          >
+                            Start
+                          </button>
+                        )}
+                      {task.status !== "review" && task.status !== "done" && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() =>
+                            handleTaskStatusUpdate(task.id, "review")
+                          }
+                          disabled={actionLoading === `task-${task.id}`}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                        >
+                          Mark Review
+                        </button>
+                      )}
+                      {task.status !== "done" && (
+                        <button
+                          className="btn-primary"
+                          onClick={() =>
+                            handleTaskStatusUpdate(task.id, "done")
+                          }
+                          disabled={actionLoading === `task-${task.id}`}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                        >
+                          {actionLoading === `task-${task.id}`
+                            ? "Saving..."
+                            : "Complete"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </>

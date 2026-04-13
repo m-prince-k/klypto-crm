@@ -23,6 +23,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from "lucide-react";
+import { useSelector } from "react-redux";
 import apiClient from "../api/apiClient";
 
 // ── Role definitions ────────────────────────────────────────────────────────
@@ -68,10 +69,9 @@ const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
 
 // ── Utility: generate random password ─────────────────────────────────────
 function generatePassword(len = 12) {
-  const chars =
-    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
   return Array.from({ length: len }, () =>
-    chars.charAt(Math.floor(Math.random() * chars.length))
+    chars.charAt(Math.floor(Math.random() * chars.length)),
   ).join("");
 }
 
@@ -111,27 +111,46 @@ function CredentialCard({ credentials, onClose }) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       style={{
-        background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(99,102,241,0.08))",
+        background:
+          "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(99,102,241,0.08))",
         border: "1px solid rgba(16,185,129,0.3)",
         borderRadius: "16px",
         padding: "24px",
         marginTop: "24px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "16px",
+        }}
+      >
         <CheckCircle2 size={22} color="#10b981" />
         <h4 style={{ fontSize: "16px", fontWeight: "700", color: "#10b981" }}>
           Account Created Successfully
         </h4>
       </div>
-      <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "16px" }}>
-        Share these credentials with <strong>{credentials.fullName}</strong>. They will use them to sign in.
+      <p
+        style={{
+          fontSize: "13px",
+          color: "var(--text-muted)",
+          marginBottom: "16px",
+        }}
+      >
+        Share these credentials with <strong>{credentials.fullName}</strong>.
+        They will use them to sign in.
       </p>
 
       {[
         { label: "Email", value: credentials.email, field: "email" },
         { label: "Password", value: credentials.password, field: "password" },
-        { label: "Employee Code", value: credentials.employeeCode, field: "code" },
+        {
+          label: "Employee Code",
+          value: credentials.employeeCode,
+          field: "code",
+        },
       ].map((row) => (
         <div
           key={row.field}
@@ -147,10 +166,23 @@ function CredentialCard({ credentials, onClose }) {
           }}
         >
           <div>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "700", marginBottom: "2px" }}>
+            <div
+              style={{
+                fontSize: "10px",
+                color: "var(--text-muted)",
+                fontWeight: "700",
+                marginBottom: "2px",
+              }}
+            >
               {row.label.toUpperCase()}
             </div>
-            <div style={{ fontSize: "14px", fontFamily: "monospace", fontWeight: "600" }}>
+            <div
+              style={{
+                fontSize: "14px",
+                fontFamily: "monospace",
+                fontWeight: "600",
+              }}
+            >
               {row.value}
             </div>
           </div>
@@ -160,11 +192,16 @@ function CredentialCard({ credentials, onClose }) {
               padding: "6px",
               borderRadius: "8px",
               backgroundColor: "var(--glass)",
-              color: copiedField === row.field ? "#10b981" : "var(--text-muted)",
+              color:
+                copiedField === row.field ? "#10b981" : "var(--text-muted)",
               transition: "all 0.2s",
             }}
           >
-            {copiedField === row.field ? <Check size={16} /> : <Copy size={16} />}
+            {copiedField === row.field ? (
+              <Check size={16} />
+            ) : (
+              <Copy size={16} />
+            )}
           </button>
         </div>
       ))}
@@ -172,7 +209,14 @@ function CredentialCard({ credentials, onClose }) {
       <button
         onClick={onClose}
         className="btn-primary"
-        style={{ width: "100%", marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+        style={{
+          width: "100%",
+          marginTop: "16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+        }}
       >
         <CheckCircle2 size={18} /> Done
       </button>
@@ -182,6 +226,7 @@ function CredentialCard({ credentials, onClose }) {
 
 // ── Main Component ──────────────────────────────────────────────────────────
 const UserManagement = () => {
+  const { user } = useSelector((state) => state.auth);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -200,6 +245,22 @@ const UserManagement = () => {
     jobTitle: "",
     employeeCode: "",
   });
+
+  const normalizedRoles = (user?.roles || []).map((role) =>
+    String(role).toUpperCase(),
+  );
+  const canCreatePrivilegedRoles =
+    normalizedRoles.includes("SUPER_ADMIN") ||
+    normalizedRoles.includes("ADMIN");
+  const roleOptions = canCreatePrivilegedRoles
+    ? ROLES
+    : ROLES.filter((role) => role.id === "EMPLOYEE");
+
+  useEffect(() => {
+    if (!roleOptions.some((option) => option.id === formData.role)) {
+      setFormData((prev) => ({ ...prev, role: "EMPLOYEE" }));
+    }
+  }, [formData.role, roleOptions]);
 
   // ── Fetch users ────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
@@ -257,7 +318,7 @@ const UserManagement = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Failed to create user. Please try again."
+          "Failed to create user. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -271,8 +332,8 @@ const UserManagement = () => {
       const res = await apiClient.patch(`/auth/users/${userId}/toggle-status`);
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === userId ? { ...u, isActive: res.data.isActive } : u
-        )
+          u.id === userId ? { ...u, isActive: res.data.isActive } : u,
+        ),
       );
     } catch (e) {
       console.error("Toggle failed", e);
@@ -321,7 +382,13 @@ const UserManagement = () => {
             </div>
             User Management
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "6px" }}>
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "14px",
+              marginTop: "6px",
+            }}
+          >
             Provision employee accounts, assign roles and manage access.
           </p>
         </div>
@@ -347,7 +414,11 @@ const UserManagement = () => {
         }}
       >
         {[
-          { label: "Total Users", value: users.length, color: "var(--primary)" },
+          {
+            label: "Total Users",
+            value: users.length,
+            color: "var(--primary)",
+          },
           { label: "Active", value: activeCount, color: "#10b981" },
           { label: "Inactive", value: inactiveCount, color: "#ef4444" },
         ].map((stat) => (
@@ -379,8 +450,13 @@ const UserManagement = () => {
       </div>
 
       {/* ── User table ────────────────────────────────────────────────────── */}
-      <div className="glass-card" style={{ padding: "24px", overflowX: "auto" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px" }}>
+      <div
+        className="glass-card"
+        style={{ padding: "24px", overflowX: "auto" }}
+      >
+        <h3
+          style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px" }}
+        >
           All Users
         </h3>
 
@@ -407,27 +483,39 @@ const UserManagement = () => {
             <p>No users yet. Create the first employee account.</p>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "separate",
+              borderSpacing: "0 8px",
+            }}
+          >
             <thead>
               <tr>
-                {["Name", "Email", "Role", "Department", "Employee Code", "Status", "Actions"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "0 16px 8px",
-                        color: "var(--text-muted)",
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        textAlign: "left",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                {[
+                  "Name",
+                  "Email",
+                  "Role",
+                  "Department",
+                  "Employee Code",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: "0 16px 8px",
+                      color: "var(--text-muted)",
+                      fontSize: "11px",
+                      fontWeight: "700",
+                      textAlign: "left",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -448,13 +536,20 @@ const UserManagement = () => {
                       borderRadius: "12px 0 0 12px",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
                       <div
                         style={{
                           width: "34px",
                           height: "34px",
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, var(--primary), #8b5cf6)",
+                          background:
+                            "linear-gradient(135deg, var(--primary), #8b5cf6)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -471,18 +566,44 @@ const UserManagement = () => {
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: "14px 16px", fontSize: "13px", color: "var(--text-muted)" }}>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontSize: "13px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     {user.email}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      {user.roles?.map((r) => <RoleBadge key={r} role={r} />)}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      {user.roles?.map((r) => (
+                        <RoleBadge key={r} role={r} />
+                      ))}
                     </div>
                   </td>
-                  <td style={{ padding: "14px 16px", fontSize: "13px", color: "var(--text-muted)" }}>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontSize: "13px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     {user.department || "—"}
                   </td>
-                  <td style={{ padding: "14px 16px", fontSize: "13px", fontFamily: "monospace" }}>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontSize: "13px",
+                      fontFamily: "monospace",
+                    }}
+                  >
                     {user.employeeCode || "—"}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
@@ -522,7 +643,8 @@ const UserManagement = () => {
                         border: `1px solid ${user.isActive ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
                         color: user.isActive ? "#ef4444" : "#10b981",
                         backgroundColor: "transparent",
-                        cursor: actionLoading === user.id ? "not-allowed" : "pointer",
+                        cursor:
+                          actionLoading === user.id ? "not-allowed" : "pointer",
                         transition: "all 0.2s",
                       }}
                     >
@@ -585,7 +707,13 @@ const UserManagement = () => {
                   <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
                     Create Employee Account
                   </h2>
-                  <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-muted)",
+                      marginTop: "4px",
+                    }}
+                  >
                     The employee will use these credentials to sign in.
                   </p>
                 </div>
@@ -613,7 +741,11 @@ const UserManagement = () => {
               {!createdCredentials && (
                 <form
                   onSubmit={handleCreate}
-                  style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
                 >
                   {/* Error */}
                   {error && (
@@ -637,7 +769,15 @@ const UserManagement = () => {
 
                   {/* Full Name */}
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                        fontWeight: "600",
+                      }}
+                    >
                       Full Name *
                     </label>
                     <div style={{ position: "relative" }}>
@@ -672,7 +812,15 @@ const UserManagement = () => {
 
                   {/* Email */}
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                        fontWeight: "600",
+                      }}
+                    >
                       Email Address *
                     </label>
                     <div style={{ position: "relative" }}>
@@ -708,7 +856,15 @@ const UserManagement = () => {
 
                   {/* Password */}
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                        fontWeight: "600",
+                      }}
+                    >
                       Password *
                     </label>
                     <div style={{ display: "flex", gap: "8px" }}>
@@ -752,7 +908,11 @@ const UserManagement = () => {
                             color: "var(--text-muted)",
                           }}
                         >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPassword ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
                         </button>
                       </div>
                       <button
@@ -780,17 +940,26 @@ const UserManagement = () => {
 
                   {/* Role picker */}
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "10px", fontWeight: "600" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "10px",
+                        fontWeight: "600",
+                      }}
+                    >
                       Role *
                     </label>
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fill, minmax(150px, 1fr))",
                         gap: "8px",
                       }}
                     >
-                      {ROLES.map((role) => {
+                      {roleOptions.map((role) => {
                         const RoleIcon = role.icon;
                         const isSelected = formData.role === role.id;
                         return (
@@ -824,13 +993,17 @@ const UserManagement = () => {
                             >
                               <RoleIcon
                                 size={16}
-                                color={isSelected ? role.color : "var(--text-muted)"}
+                                color={
+                                  isSelected ? role.color : "var(--text-muted)"
+                                }
                               />
                               <span
                                 style={{
                                   fontSize: "13px",
                                   fontWeight: "700",
-                                  color: isSelected ? role.color : "var(--text-main)",
+                                  color: isSelected
+                                    ? role.color
+                                    : "var(--text-main)",
                                 }}
                               >
                                 {role.label}
@@ -860,7 +1033,15 @@ const UserManagement = () => {
                     }}
                   >
                     <div>
-                      <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                          marginBottom: "8px",
+                          fontWeight: "600",
+                        }}
+                      >
                         Job Title
                       </label>
                       <div style={{ position: "relative" }}>
@@ -892,7 +1073,15 @@ const UserManagement = () => {
                       </div>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "12px",
+                          color: "var(--text-muted)",
+                          marginBottom: "8px",
+                          fontWeight: "600",
+                        }}
+                      >
                         Department
                       </label>
                       <div style={{ position: "relative" }}>
@@ -927,9 +1116,19 @@ const UserManagement = () => {
 
                   {/* Employee Code */}
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "600" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: "var(--text-muted)",
+                        marginBottom: "8px",
+                        fontWeight: "600",
+                      }}
+                    >
                       Employee Code{" "}
-                      <span style={{ fontWeight: "400" }}>(auto-generated if empty)</span>
+                      <span style={{ fontWeight: "400" }}>
+                        (auto-generated if empty)
+                      </span>
                     </label>
                     <div style={{ position: "relative" }}>
                       <Hash
@@ -978,7 +1177,8 @@ const UserManagement = () => {
                   >
                     {submitting ? (
                       <>
-                        <Loader size={20} className="spinner" /> Creating Account…
+                        <Loader size={20} className="spinner" /> Creating
+                        Account…
                       </>
                     ) : (
                       <>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import {
   MoreHorizontal,
   Plus,
@@ -14,9 +15,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
 
 const ProjectKanban = () => {
+  const { user } = useSelector((state) => state.auth);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -25,29 +28,41 @@ const ProjectKanban = () => {
     title: "",
     description: "",
     priority: "Medium",
+    dueDate: "",
+    assigneeId: "",
   });
   const [projectForm, setProjectForm] = useState({
     name: "",
     description: "",
     status: "Active",
+    managerId: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of task being updated
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
   const projectDropdownRef = useRef(null);
+  const normalizedRoles = (user?.roles || []).map((role) =>
+    String(role).toUpperCase(),
+  );
+  const canManageProjects = normalizedRoles.some((role) =>
+    ["SUPER_ADMIN", "ADMIN", "MANAGER", "HR"].includes(role),
+  );
+  const employeeAllowedStatuses = ["inprogress", "review", "done"];
 
   const fetchData = async () => {
     try {
-      const [projectsRes, tasksRes] = await Promise.all([
+      const [projectsRes, tasksRes, employeesRes] = await Promise.all([
         apiClient.get("/projects"),
         apiClient.get("/projects/tasks"),
+        apiClient.get("/employees"),
       ]);
       setProjects(projectsRes.data);
       if (projectsRes.data.length > 0 && !selectedProject) {
         setSelectedProject(projectsRes.data[0]);
       }
       setTasks(tasksRes.data);
+      setEmployees(employeesRes.data || []);
     } catch (err) {
       console.error("Fetch failed", err);
     } finally {
@@ -94,6 +109,9 @@ const ProjectKanban = () => {
   }, [projects, selectedProject]);
 
   const handleStatusChange = async (taskId, newStatus) => {
+    if (!canManageProjects && !employeeAllowedStatuses.includes(newStatus)) {
+      return;
+    }
     setActionLoading(taskId);
     try {
       await apiClient.patch(`/projects/tasks/${taskId}`, { status: newStatus });
@@ -126,6 +144,12 @@ const ProjectKanban = () => {
 
   const handleColumnDrop = async (event, columnId) => {
     event.preventDefault();
+
+    if (!canManageProjects && !employeeAllowedStatuses.includes(columnId)) {
+      setDraggedTaskId(null);
+      setDragOverColumn(null);
+      return;
+    }
 
     const droppedTaskId =
       draggedTaskId || event.dataTransfer.getData("text/plain");
@@ -173,10 +197,20 @@ const ProjectKanban = () => {
     try {
       await apiClient.post("/projects/tasks", {
         ...newTask,
+        dueDate: newTask.dueDate
+          ? new Date(newTask.dueDate).toISOString()
+          : undefined,
+        assigneeId: newTask.assigneeId || undefined,
         projectId: selectedProject.id,
       });
       setShowTaskModal(false);
-      setNewTask({ title: "", description: "", priority: "Medium" });
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "Medium",
+        dueDate: "",
+        assigneeId: "",
+      });
       fetchData();
     } catch (err) {
       alert("Failed to create task");
@@ -193,11 +227,17 @@ const ProjectKanban = () => {
         name: projectForm.name,
         description: projectForm.description || undefined,
         status: projectForm.status || "Active",
+        managerId: projectForm.managerId || undefined,
       };
 
       const res = await apiClient.post("/projects", payload);
       setShowProjectModal(false);
-      setProjectForm({ name: "", description: "", status: "Active" });
+      setProjectForm({
+        name: "",
+        description: "",
+        status: "Active",
+        managerId: "",
+      });
       await fetchData();
       if (res.data) setSelectedProject(res.data);
     } catch (err) {
@@ -383,15 +423,33 @@ const ProjectKanban = () => {
                           cursor: "pointer",
                         }}
                       >
-                        <span
+                        <div
                           style={{
-                            fontSize: "13px",
-                            fontWeight: isSelected ? "700" : "600",
-                            textAlign: "left",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: "2px",
                           }}
                         >
-                          {project.name}
-                        </span>
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: isSelected ? "700" : "600",
+                              textAlign: "left",
+                            }}
+                          >
+                            {project.name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "var(--text-muted)",
+                              textAlign: "left",
+                            }}
+                          >
+                            Manager: {project.manager?.fullName || "Unassigned"}
+                          </span>
+                        </div>
                         {isSelected ? <CheckCircle size={14} /> : null}
                       </button>
                     );
@@ -400,33 +458,54 @@ const ProjectKanban = () => {
               )}
             </AnimatePresence>
           </div>
+          {selectedProject && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                fontSize: "12px",
+              }}
+            >
+              <span style={{ color: "var(--text-muted)" }}>
+                Manager: {selectedProject.manager?.fullName || "Unassigned"}
+              </span>
+              <span style={{ color: "var(--text-muted)" }}>
+                Created By: {selectedProject.createdBy?.fullName || "Unknown"}
+              </span>
+            </div>
+          )}
+          {canManageProjects && (
+            <button
+              onClick={() => setShowProjectModal(true)}
+              className="btn-secondary"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "700",
+              }}
+            >
+              <Plus size={18} /> New Project
+            </button>
+          )}
+        </div>
+        {canManageProjects && (
           <button
-            onClick={() => setShowProjectModal(true)}
-            className="btn-secondary"
+            className="btn-primary"
+            onClick={() => setShowTaskModal(true)}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              fontWeight: "700",
+              padding: "12px 24px",
+              borderRadius: "10px",
+              boxShadow: "0 4px 12px rgba(14, 165, 233, 0.3)",
             }}
           >
-            <Plus size={18} /> New Project
+            <Plus size={20} /> Add Task
           </button>
-        </div>
-        <button
-          className="btn-primary"
-          onClick={() => setShowTaskModal(true)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "12px 24px",
-            borderRadius: "10px",
-            boxShadow: "0 4px 12px rgba(14, 165, 233, 0.3)",
-          }}
-        >
-          <Plus size={20} /> Add Task
-        </button>
+        )}
       </div>
 
       <div
@@ -552,18 +631,21 @@ const ProjectKanban = () => {
                         {actionLoading === task.id && (
                           <Loader size={12} className="spinner" />
                         )}
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          style={{ color: "var(--text-muted)", opacity: 0.5 }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.color = "#ef4444")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "var(--text-muted)")
-                          }
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {canManageProjects && (
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            style={{ color: "var(--text-muted)", opacity: 0.5 }}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.color = "#ef4444")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.color =
+                                "var(--text-muted)")
+                            }
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p
@@ -594,17 +676,32 @@ const ProjectKanban = () => {
                           color: "var(--text-muted)",
                         }}
                       >
-                        <Calendar size={12} />{" "}
+                        <Calendar size={12} />
                         {task.dueDate
                           ? new Date(task.dueDate).toLocaleDateString()
                           : "No Deadline"}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontSize: "11px",
+                          color: "var(--text-muted)",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <UserIcon size={12} />
+                        {task.assignee?.fullName || "Unassigned"}
                       </div>
                     </div>
 
                     <div style={{ display: "flex", gap: "6px" }}>
                       {columns.map(
                         (target) =>
-                          target.id !== col.id && (
+                          target.id !== col.id &&
+                          (canManageProjects ||
+                            employeeAllowedStatuses.includes(target.id)) && (
                             <button
                               key={target.id}
                               disabled={actionLoading === task.id}
@@ -705,23 +802,25 @@ const ProjectKanban = () => {
             Ready to streamline your team's workflow? Create a project to start
             organizing tasks, tracking progress, and hitting milestones.
           </p>
-          <button
-            onClick={() => setShowProjectModal(true)}
-            className="btn-primary"
-            style={{
-              padding: "16px 48px",
-              borderRadius: "12px",
-              fontSize: "16px",
-              fontWeight: "700",
-            }}
-          >
-            + Create New Project
-          </button>
+          {canManageProjects && (
+            <button
+              onClick={() => setShowProjectModal(true)}
+              className="btn-primary"
+              style={{
+                padding: "16px 48px",
+                borderRadius: "12px",
+                fontSize: "16px",
+                fontWeight: "700",
+              }}
+            >
+              + Create New Project
+            </button>
+          )}
         </div>
       )}
 
       <AnimatePresence>
-        {showTaskModal && (
+        {showTaskModal && canManageProjects && (
           <div
             className="modal-overlay"
             style={{
@@ -828,6 +927,45 @@ const ProjectKanban = () => {
                     }}
                   >
                     Priority & Impact
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          color: "var(--text-muted)",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        Project Manager
+                      </label>
+                      <select
+                        value={projectForm.managerId}
+                        onChange={(e) =>
+                          setProjectForm({
+                            ...projectForm,
+                            managerId: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "14px",
+                          borderRadius: "10px",
+                          backgroundColor: "var(--input-bg)",
+                          border: "1px solid var(--border)",
+                          color: "white",
+                        }}
+                      >
+                        <option value="">Select manager (optional)</option>
+                        {employees
+                          .filter((employee) => employee.userId)
+                          .map((employee) => (
+                            <option key={employee.id} value={employee.userId}>
+                              {employee.name} ({employee.department})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </label>
                   <div style={{ position: "relative" }}>
                     <select
@@ -895,6 +1033,71 @@ const ProjectKanban = () => {
                     }}
                   />
                 </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "var(--text-muted)",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Assign To
+                  </label>
+                  <select
+                    value={newTask.assigneeId}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, assigneeId: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                    }}
+                  >
+                    <option value="">Select employee</option>
+                    {employees
+                      .filter((employee) => employee.userId)
+                      .map((employee) => (
+                        <option key={employee.id} value={employee.userId}>
+                          {employee.name} ({employee.department})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "var(--text-muted)",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, dueDate: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      borderRadius: "10px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "white",
+                      fontSize: "15px",
+                    }}
+                  />
+                </div>
                 <div
                   style={{ display: "flex", gap: "16px", marginTop: "12px" }}
                 >
@@ -934,7 +1137,7 @@ const ProjectKanban = () => {
           </div>
         )}
 
-        {showProjectModal && (
+        {showProjectModal && canManageProjects && (
           <div
             className="modal-overlay"
             style={{
