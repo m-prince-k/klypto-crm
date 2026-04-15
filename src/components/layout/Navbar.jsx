@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Search, Bell, Plus, Settings, Moon, Sun, Menu } from "lucide-react";
 import { logout, logoutUser } from "../../store/auth/authSlice";
+import { API_BASE_URL } from "../../api/apiClient";
 import { toast } from "sonner";
 
 const Navbar = ({ onMenuClick }) => {
@@ -49,9 +50,7 @@ const Navbar = ({ onMenuClick }) => {
   useEffect(() => {
     if (!accessToken) return;
 
-    const apiBaseUrl =
-      import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-    const eventUrl = `${apiBaseUrl}/auth/events?token=${encodeURIComponent(accessToken)}`;
+    const eventUrl = `${API_BASE_URL}/auth/events?token=${encodeURIComponent(accessToken)}`;
 
     const eventSource = new EventSource(eventUrl);
 

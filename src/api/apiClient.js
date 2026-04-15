@@ -1,11 +1,52 @@
 import axios from "axios";
 import { toast } from "sonner";
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
+
+const resolveDefaultApiUrl = () => {
+  if (typeof window === "undefined") {
+    return "http://localhost:3000/api";
+  }
+
+  const protocol = window.location.protocol === "https:" ? "https" : "http";
+  const hostname = window.location.hostname || "localhost";
+  return `${protocol}://${hostname}:3000/api`;
+};
+
+const getSafeApiBaseUrl = () => {
+  const envApiUrl = import.meta.env.VITE_API_URL?.trim();
+  if (!envApiUrl) {
+    return resolveDefaultApiUrl();
+  }
+
+  if (typeof window === "undefined") {
+    return envApiUrl;
+  }
+
+  try {
+    const envUrl = new URL(envApiUrl);
+    const appHost = window.location.hostname;
+    const envHostIsLocal = LOCAL_HOSTS.has(envUrl.hostname);
+    const appHostIsLocal = LOCAL_HOSTS.has(appHost);
+
+    // If app is opened from another device, ignore localhost env URLs.
+    if (envHostIsLocal && !appHostIsLocal) {
+      return resolveDefaultApiUrl();
+    }
+  } catch {
+    return resolveDefaultApiUrl();
+  }
+
+  return envApiUrl;
+};
+
+export const API_BASE_URL = getSafeApiBaseUrl();
+
 /**
  * Professional Axios Instance Configuration
  */
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -232,7 +273,7 @@ apiClient.interceptors.response.use(
 
       try {
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || "http://localhost:3000/api"}/auth/refresh`,
+          `${API_BASE_URL}/auth/refresh`,
           null,
           {
             headers: {
