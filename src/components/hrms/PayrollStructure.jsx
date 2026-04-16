@@ -514,7 +514,7 @@ const PayrollStructure = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 >
                   <option value="">Select Employee</option>
@@ -556,7 +556,7 @@ const PayrollStructure = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -583,7 +583,7 @@ const PayrollStructure = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -619,7 +619,7 @@ const PayrollStructure = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -646,7 +646,7 @@ const PayrollStructure = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>

@@ -37,13 +37,6 @@ const ROLES = [
     color: "#ef4444",
   },
   {
-    id: "ADMIN",
-    label: "Administrator",
-    description: "Manage users & settings",
-    icon: Shield,
-    color: "#f59e0b",
-  },
-  {
     id: "MANAGER",
     label: "Manager",
     description: "Leads, recruitment & team",
@@ -67,6 +60,7 @@ const ROLES = [
 ];
 
 const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
+const ASSIGNABLE_ROLES = ROLES.filter((role) => role.id !== "SUPER_ADMIN");
 
 // ── Utility: generate random password ─────────────────────────────────────
 function generatePassword(len = 12) {
@@ -256,8 +250,8 @@ const UserManagement = () => {
     normalizedRoles.includes("SUPER_ADMIN") ||
     normalizedRoles.includes("ADMIN");
   const roleOptions = canCreatePrivilegedRoles
-    ? ROLES
-    : ROLES.filter((role) => role.id === "EMPLOYEE");
+    ? ASSIGNABLE_ROLES
+    : ASSIGNABLE_ROLES.filter((role) => role.id === "EMPLOYEE");
 
   useEffect(() => {
     if (!roleOptions.some((option) => option.id === formData.role)) {
@@ -694,7 +688,7 @@ const UserManagement = () => {
                           justifyContent: "center",
                           fontSize: "13px",
                           fontWeight: "700",
-                          color: "white",
+                          color: "var(--text-main)",
                           flexShrink: 0,
                         }}
                       >

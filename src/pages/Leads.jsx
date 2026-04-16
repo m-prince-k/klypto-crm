@@ -18,6 +18,8 @@ import apiClient from "../api/apiClient";
 const KanbanCard = ({
   lead,
   onClick,
+  onStatusChange,
+  stages,
   onDragStart,
   onDragEnd,
   isDragging,
@@ -108,12 +110,41 @@ const KanbanCard = ({
           alignItems: "center",
           justifyContent: "center",
           fontSize: "10px",
-          color: "white",
+          color: "var(--text-main)",
           fontWeight: "700",
         }}
       >
         {lead.name[0]}
       </div>
+    </div>
+
+    <div style={{ marginTop: "10px" }}>
+      <select
+        value={lead.status}
+        disabled={dragDisabled}
+        onClick={(event) => event.stopPropagation()}
+        onChange={(event) => {
+          event.stopPropagation();
+          onStatusChange(lead.id, event.target.value);
+        }}
+        style={{
+          width: "100%",
+          backgroundColor: "var(--input-bg)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+          color: "var(--text-main)",
+          fontSize: "12px",
+          fontWeight: "600",
+          padding: "8px 10px",
+          cursor: dragDisabled ? "not-allowed" : "pointer",
+        }}
+      >
+        {stages.map((stage) => (
+          <option key={stage.id} value={stage.id}>
+            {stage.title}
+          </option>
+        ))}
+      </select>
     </div>
   </motion.div>
 );
@@ -205,8 +236,8 @@ const LeadSidePanel = ({ leadId, onClose, onUpdate }) => {
         }}
       >
         <h2 style={{ fontSize: "18px", fontWeight: "700" }}>Lead Profile</h2>
-        <button onClick={onClose} style={{ color: "var(--text-muted)" }}>
-          <X size={20} style={{ color: "white" }} />
+        <button onClick={onClose} style={{ color: "var(--text-main)" }}>
+          <X size={20} style={{ color: "var(--text-main)" }} />
         </button>
       </div>
 
@@ -230,7 +261,7 @@ const LeadSidePanel = ({ leadId, onClose, onUpdate }) => {
               justifyContent: "center",
               fontSize: "24px",
               fontWeight: "bold",
-              color: "white",
+              color: "var(--text-main)",
             }}
           >
             {lead.name[0]}
@@ -333,7 +364,7 @@ const LeadSidePanel = ({ leadId, onClose, onUpdate }) => {
                 right: "10px",
                 bottom: "10px",
                 backgroundColor: "var(--primary)",
-                color: "white",
+                color: "var(--text-main)",
                 padding: "4px 10px",
                 borderRadius: "6px",
                 fontSize: "11px",
@@ -453,11 +484,14 @@ const Leads = () => {
   };
 
   const handleUpdateStatus = async (leadId, newStatus) => {
+    setActionLoading(leadId);
     try {
       await apiClient.patch(`/leads/${leadId}`, { status: newStatus });
       fetchLeads();
     } catch (err) {
       console.error("Failed to update status", err);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -645,6 +679,8 @@ const Leads = () => {
                       key={lead.id}
                       lead={lead}
                       onClick={() => setSelectedLeadId(lead.id)}
+                      onStatusChange={handleUpdateStatus}
+                      stages={stages}
                       onDragStart={handleLeadDragStart}
                       onDragEnd={handleLeadDragEnd}
                       isDragging={draggedLeadId === lead.id}
@@ -697,7 +733,7 @@ const Leads = () => {
                 Create New Lead
               </h3>
               <button onClick={() => setShowAddModal(false)}>
-                <X size={20} style={{ color: "white" }} />
+                <X size={20} style={{ color: "var(--text-main)" }} />
               </button>
             </div>
             <form
@@ -718,7 +754,7 @@ const Leads = () => {
                   borderRadius: "8px",
                   backgroundColor: "var(--input-bg)",
                   border: "1px solid var(--border)",
-                  color: "white",
+                  color: "var(--text-main)",
                 }}
               />
               <input
@@ -734,7 +770,7 @@ const Leads = () => {
                   borderRadius: "8px",
                   backgroundColor: "var(--input-bg)",
                   border: "1px solid var(--border)",
-                  color: "white",
+                  color: "var(--text-main)",
                 }}
               />
               <div
@@ -757,7 +793,7 @@ const Leads = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
                 <input
@@ -773,7 +809,7 @@ const Leads = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
               </div>
@@ -795,7 +831,7 @@ const Leads = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 >
                   <option value="High">High Priority</option>
@@ -815,7 +851,7 @@ const Leads = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
               </div>

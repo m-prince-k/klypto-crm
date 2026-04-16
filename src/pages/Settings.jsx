@@ -268,7 +268,7 @@ const Settings = () => {
                   to="/roles-access"
                   style={{
                     backgroundColor: "var(--primary)",
-                    color: "white",
+                    color: "var(--text-main)",
                     borderRadius: "8px",
                     padding: "10px 14px",
                     fontSize: "13px",

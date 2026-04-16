@@ -392,7 +392,7 @@ const RolesAccess = () => {
               disabled={createRoleLoading}
               style={{
                 backgroundColor: "var(--primary)",
-                color: "white",
+                color: "var(--text-main)",
                 border: "none",
                 borderRadius: "8px",
                 padding: "10px 14px",
@@ -685,7 +685,7 @@ const RolesAccess = () => {
                           disabled={!!updateRoleLoadingById[role.id]}
                           style={{
                             backgroundColor: "var(--primary)",
-                            color: "white",
+                            color: "var(--text-main)",
                             border: "none",
                             borderRadius: "8px",
                             padding: "8px 12px",
@@ -932,7 +932,7 @@ const RolesAccess = () => {
                       disabled={!!assignLoadingByUser[rbacUser.id]}
                       style={{
                         backgroundColor: "var(--primary)",
-                        color: "white",
+                        color: "var(--text-main)",
                         border: "none",
                         borderRadius: "8px",
                         padding: "10px 14px",

@@ -18,6 +18,24 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
 
+const getErrorMessage = (error, fallback) => {
+  const payload = error?.response?.data;
+  if (Array.isArray(payload?.message)) return payload.message.join(", ");
+  if (typeof payload?.message === "string") return payload.message;
+  if (typeof payload?.error === "string") return payload.error;
+  return fallback;
+};
+
+const getDefaultPartnerForm = () => ({
+  name: "",
+  contactPerson: "",
+  email: "",
+  phone: "",
+  status: "Active",
+  category: "General",
+  creditLimit: 0,
+});
+
 const PartnerMaster = () => {
   const [activeSubTab, setActiveSubTab] = useState("customers");
   const [partners, setPartners] = useState([]);
@@ -25,17 +43,12 @@ const PartnerMaster = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    contactPerson: "",
-    email: "",
-    phone: "",
-    status: "Active",
-    category: "General",
-    creditLimit: 0,
-  });
+  const [formData, setFormData] = useState(getDefaultPartnerForm());
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of partner being updated
+  const [editingPartner, setEditingPartner] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [formError, setFormError] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -56,27 +69,36 @@ const PartnerMaster = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
     setSubmitting(true);
+
+    const type = activeSubTab === "customers" ? "CUSTOMER" : "VENDOR";
+    const payload = {
+      ...formData,
+      type: editingPartner?.type || type,
+      creditLimit: parseFloat(formData.creditLimit) || 0,
+    };
+
     try {
-      const type = activeSubTab === "customers" ? "CUSTOMER" : "VENDOR";
-      await apiClient.post("/partners", {
-        ...formData,
-        type,
-        creditLimit: parseFloat(formData.creditLimit) || 0,
-      });
+      if (editingPartner?.id) {
+        await apiClient.patch(`/partners/${editingPartner.id}`, payload);
+      } else {
+        await apiClient.post("/partners", payload);
+      }
+
       setShowModal(false);
-      setFormData({
-        name: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        status: "Active",
-        category: "General",
-        creditLimit: 0,
-      });
-      fetchData();
+      setEditingPartner(null);
+      setFormData(getDefaultPartnerForm());
+      await fetchData();
     } catch (err) {
-      alert("Failed to create partner");
+      setFormError(
+        getErrorMessage(
+          err,
+          editingPartner
+            ? "Failed to update partner"
+            : "Failed to create partner",
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -95,21 +117,38 @@ const PartnerMaster = () => {
   };
 
   const handleDeletePartner = async (id) => {
-    if (
-      !window.confirm(
-        "Delete this partner profile? Transactions under this partner may be affected.",
-      )
-    )
-      return;
     setActionLoading(id);
     try {
       await apiClient.delete(`/partners/${id}`);
       await fetchData();
     } catch (err) {
-      alert("Failed to delete partner");
+      setFormError(getErrorMessage(err, "Failed to delete partner"));
     } finally {
       setActionLoading(null);
+      setConfirmDelete(null);
     }
+  };
+
+  const openCreateModal = () => {
+    setEditingPartner(null);
+    setFormError("");
+    setFormData(getDefaultPartnerForm());
+    setShowModal(true);
+  };
+
+  const openEditModal = (partner) => {
+    setEditingPartner(partner);
+    setFormError("");
+    setFormData({
+      name: partner.name || "",
+      contactPerson: partner.contactPerson || "",
+      email: partner.email || "",
+      phone: partner.phone || "",
+      status: partner.status || "Active",
+      category: partner.category || "General",
+      creditLimit: partner.creditLimit ?? 0,
+    });
+    setShowModal(true);
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -179,7 +218,7 @@ const PartnerMaster = () => {
             ))}
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
             className="btn-primary"
             style={{ display: "flex", alignItems: "center", gap: "8px" }}
           >
@@ -472,7 +511,7 @@ const PartnerMaster = () => {
                       }}
                     >
                       <button
-                        onClick={() => handleDeletePartner(partner.id)}
+                        onClick={() => setConfirmDelete(partner)}
                         disabled={actionLoading === partner.id}
                         style={{ color: "var(--text-muted)", opacity: 0.6 }}
                         onMouseEnter={(e) =>
@@ -484,7 +523,11 @@ const PartnerMaster = () => {
                       >
                         <Trash2 size={16} />
                       </button>
-                      <button style={{ color: "var(--text-muted)" }}>
+                      <button
+                        style={{ color: "var(--text-muted)" }}
+                        onClick={() => openEditModal(partner)}
+                        title="View / Edit Partner"
+                      >
                         <ExternalLink size={16} />
                       </button>
                     </div>
@@ -541,11 +584,14 @@ const PartnerMaster = () => {
                 }}
               >
                 <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
-                  Create New{" "}
-                  {activeSubTab === "customers" ? "Customer" : "Vendor"}
+                  {editingPartner
+                    ? "View / Edit Partner"
+                    : `Create New ${
+                        activeSubTab === "customers" ? "Customer" : "Vendor"
+                      }`}
                 </h2>
                 <button onClick={() => setShowModal(false)}>
-                  <X size={20} style={{ color: "white" }} />
+                  <X size={20} style={{ color: "var(--text-main)" }} />
                 </button>
               </div>
               <form
@@ -556,6 +602,22 @@ const PartnerMaster = () => {
                   gap: "20px",
                 }}
               >
+                {formError && (
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(239, 68, 68, 0.5)",
+                      color: "#fda4af",
+                      backgroundColor: "rgba(239, 68, 68, 0.1)",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {formError}
+                  </div>
+                )}
+
                 <div>
                   <label
                     style={{
@@ -579,7 +641,7 @@ const PartnerMaster = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -616,7 +678,7 @@ const PartnerMaster = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -642,7 +704,7 @@ const PartnerMaster = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -678,7 +740,7 @@ const PartnerMaster = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -705,7 +767,7 @@ const PartnerMaster = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -737,7 +799,7 @@ const PartnerMaster = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -758,11 +820,79 @@ const PartnerMaster = () => {
                 >
                   {submitting ? (
                     <Loader size={18} className="spinner" />
+                  ) : editingPartner ? (
+                    "Update Partner"
                   ) : (
                     "Save Partner"
                   )}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {confirmDelete && (
+          <div
+            className="modal-overlay"
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1100,
+              padding: "20px",
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card"
+              style={{ width: "100%", maxWidth: "430px", padding: "24px" }}
+            >
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  marginBottom: "10px",
+                }}
+              >
+                Delete partner profile?
+              </h3>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "13px",
+                  marginBottom: "18px",
+                }}
+              >
+                Transactions under this partner may be affected.
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  className="btn-secondary"
+                  onClick={() => setConfirmDelete(null)}
+                  disabled={actionLoading === confirmDelete.id}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={() => handleDeletePartner(confirmDelete.id)}
+                  disabled={actionLoading === confirmDelete.id}
+                >
+                  {actionLoading === confirmDelete.id
+                    ? "Deleting..."
+                    : "Delete"}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -336,7 +336,7 @@ const RecruitmentAssessment = () => {
                           borderRadius: "8px",
                           backgroundColor: "var(--input-bg)",
                           border: "1px solid var(--border)",
-                          color: "white",
+                          color: "var(--text-main)",
                         }}
                       />
                     </div>
@@ -366,7 +366,7 @@ const RecruitmentAssessment = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                         fontSize: "13px",
                         minWidth: "150px",
                       }}
@@ -588,7 +588,7 @@ const RecruitmentAssessment = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "13px",
                       minWidth: "220px",
                     }}
@@ -759,7 +759,7 @@ const RecruitmentAssessment = () => {
                                   height: "32px",
                                   borderRadius: "50%",
                                   backgroundColor: "var(--primary)",
-                                  color: "white",
+                                  color: "var(--text-main)",
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
@@ -981,7 +981,7 @@ const RecruitmentAssessment = () => {
                   Create Job Posting
                 </h3>
                 <button onClick={() => setIsAddingJob(false)}>
-                  <XCircle size={20} style={{ color: "white" }} />
+                  <XCircle size={20} style={{ color: "var(--text-main)" }} />
                 </button>
               </div>
               <form
@@ -1002,7 +1002,7 @@ const RecruitmentAssessment = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
                 <input
@@ -1022,7 +1022,7 @@ const RecruitmentAssessment = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
                 <button
@@ -1078,7 +1078,7 @@ const RecruitmentAssessment = () => {
                   Add Candidate
                 </h3>
                 <button onClick={() => setIsAddingCandidate(false)}>
-                  <XCircle size={20} style={{ color: "white" }} />
+                  <XCircle size={20} style={{ color: "var(--text-main)" }} />
                 </button>
               </div>
               <form
@@ -1102,7 +1102,7 @@ const RecruitmentAssessment = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
                 <div
@@ -1128,7 +1128,7 @@ const RecruitmentAssessment = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                   <input
@@ -1147,7 +1147,7 @@ const RecruitmentAssessment = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -1175,7 +1175,7 @@ const RecruitmentAssessment = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option value="">Select Job</option>
@@ -1201,7 +1201,7 @@ const RecruitmentAssessment = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>

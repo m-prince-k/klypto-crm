@@ -18,6 +18,12 @@ export const DASHBOARD_MODULES = [
     description: "ERP workflows",
   },
   {
+    key: "projects",
+    label: "Projects",
+    route: "/projects",
+    description: "Project and task management",
+  },
+  {
     key: "recruitment",
     label: "Recruitment",
     route: "/recruitment",
@@ -72,25 +78,13 @@ export const DEFAULT_ROLE_MODULES = {
   SUPER_ADMIN: DASHBOARD_MODULES.map((module) => module.key).filter(
     (moduleKey) => moduleKey !== "employees",
   ),
-  ADMIN: [
-    "dashboard",
-    "leads",
-    "erp",
-    "recruitment",
-    "grievances",
-    "payroll",
-    "hrms",
-    "leave",
-    "settings",
-    "users",
-  ],
   MANAGER: [
     "dashboard",
     "leads",
-    "erp",
+    "projects",
     "recruitment",
     "grievances",
-    "leave",
+    "employees",
     "settings",
   ],
   HR: [

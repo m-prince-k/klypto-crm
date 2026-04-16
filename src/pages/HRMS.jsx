@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
-  Users2,
   GitBranch,
   Clock3,
   CalendarCheck2,
@@ -15,7 +14,6 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import HRMSOverview from "../components/hrms/HRMSOverview";
-import EmployeeMaster from "../components/hrms/EmployeeMaster";
 import OrgStructure from "../components/hrms/OrgStructure";
 import Attendance from "../components/hrms/Attendance";
 import LeaveManagement from "../components/hrms/LeaveManagement";
@@ -62,13 +60,18 @@ const HR = ({ initialTab = "overview" }) => {
 
   const tabs = [
     { id: "overview", label: "Overview", icon: <BarChart3 size={18} /> },
-    { id: "employees", label: "Employees", icon: <Users2 size={18} /> },
     { id: "structure", label: "Structure", icon: <GitBranch size={18} /> },
     { id: "attendance", label: "Attendance", icon: <Clock3 size={18} /> },
     { id: "leave", label: "Leave", icon: <CalendarCheck2 size={18} /> },
     { id: "payroll", label: "Payroll", icon: <Wallet2 size={18} /> },
     { id: "performance", label: "Performance", icon: <Award size={18} /> },
   ];
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, tabs]);
 
   useEffect(() => {
     const activeButton = tabNavRef.current?.querySelector(
@@ -223,12 +226,6 @@ const HR = ({ initialTab = "overview" }) => {
             </TabContent>
           )}
 
-          {activeTab === "employees" && (
-            <TabContent key="employees" title="Employee Master" showAdd={false}>
-              <EmployeeMaster />
-            </TabContent>
-          )}
-
           {activeTab === "structure" && (
             <TabContent
               key="structure"
@@ -262,10 +259,7 @@ const HR = ({ initialTab = "overview" }) => {
           )}
 
           {activeTab === "performance" && (
-            <TabContent
-              key="performance"
-              showAdd={false}
-            >
+            <TabContent key="performance" showAdd={false}>
               <PerformanceReviews />
             </TabContent>
           )}

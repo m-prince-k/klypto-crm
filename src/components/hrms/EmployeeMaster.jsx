@@ -625,7 +625,7 @@ const EmployeeMaster = () => {
                   cursor: "pointer",
                 }}
               >
-                <X size={20} style={{ color: "white" }} />
+                <X size={20} style={{ color: "var(--text-main)" }} />
               </button>
             </div>
 
@@ -855,7 +855,7 @@ const EmployeeMaster = () => {
                     padding: "10px 16px",
                     borderRadius: "8px",
                     backgroundColor: "var(--primary)",
-                    color: "white",
+                    color: "var(--text-main)",
                     border: "none",
                     cursor: saving ? "not-allowed" : "pointer",
                     fontWeight: "600",

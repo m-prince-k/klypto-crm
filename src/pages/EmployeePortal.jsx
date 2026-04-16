@@ -9,7 +9,6 @@ import {
   Loader,
   CheckCircle2,
   AlertCircle,
-  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../api/apiClient";
@@ -72,8 +71,6 @@ const EmployeePortal = () => {
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [complaints, setComplaints] = useState([]);
-  const [assignedTasks, setAssignedTasks] = useState([]);
-  const [myProjects, setMyProjects] = useState([]);
 
   const [leaveForm, setLeaveForm] = useState(initialLeaveForm);
   const [complaintForm, setComplaintForm] = useState(initialComplaintForm);
@@ -82,7 +79,6 @@ const EmployeePortal = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [leaveStatusFilter, setLeaveStatusFilter] = useState("All");
   const [complaintStatusFilter, setComplaintStatusFilter] = useState("All");
-  const [taskStatusFilter, setTaskStatusFilter] = useState("All");
 
   const todayIsoDate = useMemo(() => {
     const now = new Date();
@@ -106,6 +102,7 @@ const EmployeePortal = () => {
         setPayrollRecords([]);
         setLeaveRequests([]);
         setComplaints([]);
+
         return;
       }
 
@@ -116,8 +113,6 @@ const EmployeePortal = () => {
         payrollRes,
         leaveRes,
         grievanceRes,
-        tasksRes,
-        projectsRes,
       ] = await Promise.all([
         apiClient.get("/employees"),
         apiClient.get(`/attendance?date=${todayIsoDate}`),
@@ -125,8 +120,6 @@ const EmployeePortal = () => {
         apiClient.get("/payroll/records"),
         apiClient.get("/leaves"),
         apiClient.get("/grievances"),
-        apiClient.get("/projects/tasks"),
-        apiClient.get("/projects"),
       ]);
 
       const employeeRecord =
@@ -152,8 +145,6 @@ const EmployeePortal = () => {
       setPayrollRecords(payrollHistory);
       setLeaveRequests(myLeaves);
       setComplaints(myComplaints);
-      setAssignedTasks(tasksRes.data || []);
-      setMyProjects(projectsRes.data || []);
     } catch (fetchError) {
       const message =
         fetchError.response?.data?.message ||
@@ -281,27 +272,6 @@ const EmployeePortal = () => {
     }
   };
 
-  const handleTaskStatusUpdate = async (taskId, status) => {
-    setActionLoading(`task-${taskId}`);
-    setError("");
-    setSuccessMessage("");
-    try {
-      await apiClient.patch(`/projects/tasks/${taskId}`, { status });
-      setSuccessMessage("Task status updated.");
-      toast.success("Task status updated");
-      await fetchEmployeeData();
-    } catch (taskError) {
-      const message =
-        taskError.response?.data?.message || "Failed to update task";
-      setError(message);
-      toast.error(
-        Array.isArray(message) ? message.join(", ") : String(message),
-      );
-    } finally {
-      setActionLoading("");
-    }
-  };
-
   const latestPayroll = payrollRecords[0] || null;
   const canCheckIn = !todayAttendance?.checkIn;
 
@@ -319,9 +289,6 @@ const EmployeePortal = () => {
     (complaint) =>
       complaintStatusFilter === "All" ||
       complaint.status === complaintStatusFilter,
-  );
-  const filteredAssignedTasks = assignedTasks.filter(
-    (task) => taskStatusFilter === "All" || task.status === taskStatusFilter,
   );
 
   if (loading) {
@@ -926,179 +893,6 @@ const EmployeePortal = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-
-          <div className="glass-card" style={{ padding: "18px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                marginBottom: "14px",
-              }}
-            >
-              <ClipboardList size={18} />
-              <h3 style={{ fontWeight: "700" }}>My Projects & Tasks</h3>
-            </div>
-
-            <div
-              style={{
-                fontSize: "13px",
-                color: "var(--text-muted)",
-                marginBottom: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "10px",
-                flexWrap: "wrap",
-              }}
-            >
-              <span>
-                Assigned tasks: {filteredAssignedTasks.length} /{" "}
-                {assignedTasks.length} · Projects: {myProjects.length}
-              </span>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    letterSpacing: "0.4px",
-                  }}
-                >
-                  FILTER TASK STATUS
-                </span>
-                <select
-                  value={taskStatusFilter}
-                  onChange={(event) => setTaskStatusFilter(event.target.value)}
-                  style={{
-                    padding: "6px 8px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--input-bg)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-main)",
-                    fontSize: "12px",
-                  }}
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="todo">Todo</option>
-                  <option value="inprogress">In Progress</option>
-                  <option value="review">Review</option>
-                  <option value="done">Done</option>
-                </select>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: "10px",
-                maxHeight: "260px",
-                overflowY: "auto",
-              }}
-            >
-              {filteredAssignedTasks.length === 0 ? (
-                <div style={{ color: "var(--text-muted)", fontSize: "13px" }}>
-                  No assigned tasks found for selected filter.
-                </div>
-              ) : (
-                filteredAssignedTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    style={{
-                      border: "1px solid var(--border)",
-                      borderRadius: "8px",
-                      padding: "10px",
-                      display: "grid",
-                      gap: "8px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: "10px",
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "13px", fontWeight: "700" }}>
-                          {task.title}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          {task.project?.name || "Project"} · {task.priority}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          ...getStatusStyle(
-                            task.status === "done"
-                              ? "Resolved"
-                              : task.status === "review"
-                                ? "In Review"
-                                : "Open",
-                          ),
-                        }}
-                      >
-                        {task.status}
-                      </span>
-                    </div>
-                    <div
-                      style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
-                    >
-                      {task.status !== "inprogress" &&
-                        task.status !== "done" && (
-                          <button
-                            className="btn-secondary"
-                            onClick={() =>
-                              handleTaskStatusUpdate(task.id, "inprogress")
-                            }
-                            disabled={actionLoading === `task-${task.id}`}
-                            style={{ padding: "6px 10px", fontSize: "12px" }}
-                          >
-                            Start
-                          </button>
-                        )}
-                      {task.status !== "review" && task.status !== "done" && (
-                        <button
-                          className="btn-secondary"
-                          onClick={() =>
-                            handleTaskStatusUpdate(task.id, "review")
-                          }
-                          disabled={actionLoading === `task-${task.id}`}
-                          style={{ padding: "6px 10px", fontSize: "12px" }}
-                        >
-                          Mark Review
-                        </button>
-                      )}
-                      {task.status !== "done" && (
-                        <button
-                          className="btn-primary"
-                          onClick={() =>
-                            handleTaskStatusUpdate(task.id, "done")
-                          }
-                          disabled={actionLoading === `task-${task.id}`}
-                          style={{ padding: "6px 10px", fontSize: "12px" }}
-                        >
-                          {actionLoading === `task-${task.id}`
-                            ? "Saving..."
-                            : "Complete"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </>

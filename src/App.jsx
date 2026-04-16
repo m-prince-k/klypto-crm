@@ -16,8 +16,10 @@ import ERP from "./pages/ERP";
 import RecruitmentAssessment from "./components/erp/RecruitmentAssessment";
 import GrievanceManagement from "./components/erp/GrievanceManagement";
 import Payroll from "./components/erp/Payroll";
+import ProjectKanban from "./components/erp/ProjectKanban";
 import HR from "./pages/HRMS";
 import EmployeePortal from "./pages/EmployeePortal";
+import EmployeeProjects from "./pages/EmployeeProjects";
 import Leave from "./pages/Leave";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -41,6 +43,19 @@ const SEOHelper = () => {
  */
 function AppLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [apiPendingCount, setApiPendingCount] = useState(0);
+
+  useEffect(() => {
+    const handleApiLoading = (event) => {
+      const pending = Number(event?.detail?.pending || 0);
+      setApiPendingCount(pending);
+    };
+
+    window.addEventListener("api:loading", handleApiLoading);
+    return () => {
+      window.removeEventListener("api:loading", handleApiLoading);
+    };
+  }, []);
 
   useKeyboardShortcuts([
     {
@@ -87,6 +102,16 @@ function AppLayout() {
           overflow: "hidden",
         }}
       >
+        {apiPendingCount > 0 && (
+          <div className="api-loader-pill" role="status" aria-live="polite">
+            <span className="api-loader-dot" />
+            <span>
+              {apiPendingCount === 1
+                ? "Processing request..."
+                : `Processing ${apiPendingCount} requests...`}
+            </span>
+          </div>
+        )}
         <Navbar onMenuClick={() => setIsMobileSidebarOpen((prev) => !prev)} />
         <main
           style={{
@@ -116,6 +141,15 @@ function AppLayout() {
               path="/erp"
               element={
                 <ProtectedRoute Component={ERP} requiredModules={["erp"]} />
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute
+                  Component={ProjectKanban}
+                  requiredModules={["projects"]}
+                />
               }
             />
             <Route
@@ -156,6 +190,15 @@ function AppLayout() {
               element={
                 <ProtectedRoute
                   Component={EmployeePortal}
+                  requiredModules={["employees"]}
+                />
+              }
+            />
+            <Route
+              path="/employee-projects"
+              element={
+                <ProtectedRoute
+                  Component={EmployeeProjects}
                   requiredModules={["employees"]}
                 />
               }

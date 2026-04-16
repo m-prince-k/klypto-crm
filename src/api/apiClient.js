@@ -52,6 +52,27 @@ const apiClient = axios.create({
   },
 });
 
+let activeRequestCount = 0;
+
+const emitApiLoadingState = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("api:loading", {
+      detail: { pending: activeRequestCount },
+    }),
+  );
+};
+
+const incrementApiLoading = () => {
+  activeRequestCount += 1;
+  emitApiLoadingState();
+};
+
+const decrementApiLoading = () => {
+  activeRequestCount = Math.max(0, activeRequestCount - 1);
+  emitApiLoadingState();
+};
+
 const getValidToken = (value) => {
   if (!value || typeof value !== "string") return null;
   const normalized = value.trim();
@@ -67,6 +88,11 @@ const getValidToken = (value) => {
  */
 apiClient.interceptors.request.use(
   (config) => {
+    if (config?.showGlobalLoader !== false) {
+      config.__trackGlobalLoader = true;
+      incrementApiLoading();
+    }
+
     const hasAuthorizationHeader = Boolean(config.headers?.Authorization);
     if (hasAuthorizationHeader) {
       return config;
@@ -81,6 +107,9 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    if (error?.config?.__trackGlobalLoader) {
+      decrementApiLoading();
+    }
     return Promise.reject(error);
   },
 );
@@ -118,10 +147,48 @@ const getMessageFromPayload = (payload) => {
   if (!payload) return "";
   if (typeof payload === "string") return payload;
   if (Array.isArray(payload)) return payload.join(", ");
+  if (Array.isArray(payload?.details)) return payload.details.join(", ");
   if (Array.isArray(payload?.message)) return payload.message.join(", ");
+  if (typeof payload?.detail === "string") return payload.detail;
+  if (typeof payload?.details === "string") return payload.details;
   if (typeof payload?.message === "string") return payload.message;
   if (typeof payload?.error === "string") return payload.error;
   return "";
+};
+
+const getFriendlyErrorMessage = (error) => {
+  if (!error?.response) {
+    return "Cannot reach server. Please check your internet or API URL.";
+  }
+
+  const status = error.response?.status;
+  const payloadMessage = getMessageFromPayload(error.response?.data);
+  const cleaned = String(payloadMessage || "").trim();
+
+  if (cleaned && cleaned.toLowerCase() !== "internal server error") {
+    return cleaned;
+  }
+
+  if (status === 400) {
+    return "Invalid request. Please check required fields and values.";
+  }
+  if (status === 401) {
+    return "Session expired. Please sign in again.";
+  }
+  if (status === 403) {
+    return "You do not have permission to perform this action.";
+  }
+  if (status === 404) {
+    return "Requested resource was not found.";
+  }
+  if (status === 409) {
+    return "Conflict detected. The record may already exist or is in use.";
+  }
+  if (status >= 500) {
+    return "Server error occurred. Please try again or contact support.";
+  }
+
+  return error?.message || "Something went wrong";
 };
 
 const getDefaultSuccessMessage = (method) => {
@@ -219,6 +286,10 @@ const getContextSuccessMessage = (method, endpoint, requestData = {}) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    if (response.config?.__trackGlobalLoader) {
+      decrementApiLoading();
+    }
+
     const method = String(response.config?.method || "get").toLowerCase();
     const endpoint = normalizeEndpoint(response.config?.url);
     const requestData = parseRequestData(response.config?.data);
@@ -245,6 +316,10 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
+    if (error?.config?.__trackGlobalLoader) {
+      decrementApiLoading();
+    }
+
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -311,10 +386,7 @@ apiClient.interceptors.response.use(
     }
 
     if (originalRequest?.toast !== false) {
-      const message =
-        getMessageFromPayload(error?.response?.data) ||
-        error?.message ||
-        "Something went wrong";
+      const message = getFriendlyErrorMessage(error);
       toast.error(message);
     }
 

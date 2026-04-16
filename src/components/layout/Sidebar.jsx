@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Command,
   Package,
+  ClipboardList,
   ShieldAlert,
   Wallet,
   PanelLeftClose,
@@ -23,6 +24,9 @@ import { hasModuleAccess } from "../../utils/access";
 const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user } = useSelector((state) => state.auth);
+  const normalizedRoles = (user?.roles || []).map((role) =>
+    String(role).toUpperCase(),
+  );
 
   useEffect(() => {
     const syncSidebarMode = () => {
@@ -75,6 +79,12 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       module: "erp",
     },
     {
+      title: "Projects",
+      icon: <ClipboardList size={20} />,
+      path: "/projects",
+      module: "projects",
+    },
+    {
       title: "HR",
       icon: <BadgeCheck size={20} />,
       path: "/hrms",
@@ -85,6 +95,13 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       icon: <Users size={20} />,
       path: "/employees",
       module: "employees",
+    },
+    {
+      title: "Projects",
+      icon: <ClipboardList size={20} />,
+      path: "/employee-projects",
+      module: "employees",
+      employeeOnly: true,
     },
     {
       title: "Leave",
@@ -110,7 +127,14 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
       path: "/settings",
       module: "settings",
     },
-  ].filter((item) => hasModuleAccess(user?.access, item.module));
+  ].filter((item) => {
+    const hasAccess = hasModuleAccess(user?.access, item.module);
+    if (!hasAccess) return false;
+    if (item.employeeOnly) {
+      return normalizedRoles.includes("EMPLOYEE");
+    }
+    return true;
+  });
 
   return (
     <motion.aside
@@ -154,7 +178,7 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "white",
+              color: "var(--text-main)",
             }}
           >
             <Command size={20} />

@@ -2,15 +2,14 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   MapPin,
-  Calendar,
   DollarSign,
-  Tag,
   Info,
   Plus,
   Loader,
   X,
   Trash2,
   User as UserIcon,
+  Pencil,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../../api/apiClient";
@@ -23,6 +22,7 @@ const AssetTracker = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
+  const [editingAssetId, setEditingAssetId] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     category: "IT Electronics",
@@ -33,6 +33,36 @@ const AssetTracker = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of asset being updated
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      category: "IT Electronics",
+      location: "",
+      value: "",
+      status: "In Storage",
+      employeeId: "",
+    });
+    setEditingAssetId(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (asset) => {
+    setEditingAssetId(asset.id);
+    setFormData({
+      name: asset.name || "",
+      category: asset.category || "IT Electronics",
+      location: asset.location || "",
+      value: asset.value != null ? String(asset.value) : "",
+      status: asset.status || "In Storage",
+      employeeId: asset.employeeId || asset.employee?.id || "",
+    });
+    setShowModal(true);
+  };
 
   const fetchData = async () => {
     try {
@@ -60,21 +90,25 @@ const AssetTracker = () => {
     setSubmitting(true);
     try {
       const data = { ...formData, value: parseFloat(formData.value) || 0 };
-      if (!data.employeeId) delete data.employeeId;
+      if (!data.employeeId) {
+        if (editingAssetId) {
+          data.employeeId = null;
+        } else {
+          delete data.employeeId;
+        }
+      }
 
-      await apiClient.post("/assets", data);
+      if (editingAssetId) {
+        await apiClient.patch(`/assets/${editingAssetId}`, data);
+      } else {
+        await apiClient.post("/assets", data);
+      }
+
       setShowModal(false);
-      setFormData({
-        name: "",
-        category: "IT Electronics",
-        location: "",
-        value: "",
-        status: "In Storage",
-        employeeId: "",
-      });
+      resetForm();
       fetchData();
     } catch (err) {
-      alert("Failed to add asset");
+      alert(editingAssetId ? "Failed to update asset" : "Failed to add asset");
     } finally {
       setSubmitting(false);
     }
@@ -225,7 +259,7 @@ const AssetTracker = () => {
           </div>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={openCreateModal}
           className="btn-primary"
           style={{
             height: "100%",
@@ -413,6 +447,20 @@ const AssetTracker = () => {
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   <button
+                    onClick={() => openEditModal(asset)}
+                    disabled={actionLoading === asset.id}
+                    title="Edit Asset"
+                    style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = "var(--primary)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = "var(--text-muted)")
+                    }
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
                     onClick={() => handleDeleteAsset(asset.id)}
                     disabled={actionLoading === asset.id}
                     title="Delete Asset"
@@ -569,7 +617,7 @@ const AssetTracker = () => {
               resources and valuation.
             </p>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={openCreateModal}
               className="btn-info"
               style={{ borderRadius: "8px" }}
             >
@@ -649,10 +697,15 @@ const AssetTracker = () => {
                 }}
               >
                 <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
-                  Register New Asset
+                  {editingAssetId ? "Edit Asset" : "Register New Asset"}
                 </h2>
-                <button onClick={() => setShowModal(false)}>
-                  <X size={20} style={{ color: "white" }} />
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                >
+                  <X size={20} style={{ color: "var(--text-main)" }} />
                 </button>
               </div>
               <form
@@ -686,7 +739,7 @@ const AssetTracker = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -719,7 +772,7 @@ const AssetTracker = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     >
                       <option>IT Electronics</option>
@@ -751,7 +804,7 @@ const AssetTracker = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -779,9 +832,44 @@ const AssetTracker = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "12px",
+                      color: "var(--text-muted)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Asset Status
+                  </label>
+                  <select
+                    required
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--input-bg)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    {["In Use", "In Storage", "Maintenance", "Disposed"].map(
+                      (status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ),
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label
@@ -805,7 +893,7 @@ const AssetTracker = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option value="">Unassigned</option>
@@ -832,6 +920,8 @@ const AssetTracker = () => {
                 >
                   {submitting ? (
                     <Loader size={18} className="spinner" />
+                  ) : editingAssetId ? (
+                    "Save Asset Changes"
                   ) : (
                     "Register Asset"
                   )}

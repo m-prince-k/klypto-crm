@@ -463,7 +463,7 @@ const PerformanceReviews = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 >
                   <option value="">Select Employee</option>
@@ -505,7 +505,7 @@ const PerformanceReviews = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -535,7 +535,7 @@ const PerformanceReviews = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -564,7 +564,7 @@ const PerformanceReviews = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                     resize: "none",
                   }}
                 />

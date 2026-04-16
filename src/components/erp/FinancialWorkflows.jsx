@@ -772,7 +772,7 @@ const FinancialWorkflows = () => {
                   {view === "purchases" ? "Purchase Order" : "Invoice"}
                 </h2>
                 <button onClick={() => setShowModal(false)}>
-                  <X size={20} style={{ color: "white" }} />
+                  <X size={20} style={{ color: "var(--text-main)" }} />
                 </button>
               </div>
               <form
@@ -812,7 +812,7 @@ const FinancialWorkflows = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   />
                 </div>
@@ -839,7 +839,7 @@ const FinancialWorkflows = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option value="">Select Partner</option>
@@ -882,7 +882,7 @@ const FinancialWorkflows = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>
@@ -909,7 +909,7 @@ const FinancialWorkflows = () => {
                         borderRadius: "8px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                       }}
                     />
                   </div>

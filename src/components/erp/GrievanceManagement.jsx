@@ -28,6 +28,7 @@ const GrievanceManagement = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of grievance being updated
+  const [selectedGrievance, setSelectedGrievance] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [severityFilter, setSeverityFilter] = useState("All");
 
@@ -460,6 +461,7 @@ const GrievanceManagement = () => {
                   filteredGrievances.map((grv) => (
                     <div
                       key={grv.id}
+                      onClick={() => setSelectedGrievance(grv)}
                       style={{
                         padding: "16px",
                         borderRadius: "12px",
@@ -468,6 +470,7 @@ const GrievanceManagement = () => {
                         display: "flex",
                         alignItems: "center",
                         gap: "20px",
+                        cursor: "pointer",
                       }}
                     >
                       <div
@@ -538,7 +541,10 @@ const GrievanceManagement = () => {
                             <Loader size={12} className="spinner" />
                           )}
                           <button
-                            onClick={() => handleDeleteGrievance(grv.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteGrievance(grv.id);
+                            }}
                             disabled={actionLoading === grv.id}
                             style={{ color: "var(--text-muted)", opacity: 0.6 }}
                             onMouseEnter={(e) =>
@@ -554,6 +560,7 @@ const GrievanceManagement = () => {
                           <select
                             value={grv.status}
                             disabled={actionLoading === grv.id}
+                            onClick={(event) => event.stopPropagation()}
                             onChange={(e) =>
                               handleUpdateStatus(grv.id, e.target.value)
                             }
@@ -647,7 +654,7 @@ const GrievanceManagement = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     {isAnonymous ? (
@@ -670,6 +677,7 @@ const GrievanceManagement = () => {
                 <button
                   type="button"
                   onClick={() => setIsAnonymous(!isAnonymous)}
+                  aria-label="Toggle anonymous submission"
                   style={{
                     width: "50px",
                     height: "24px",
@@ -686,7 +694,8 @@ const GrievanceManagement = () => {
                       top: "4px",
                       width: "16px",
                       height: "16px",
-                      backgroundColor: "white",
+                      backgroundColor: "#ffffff",
+                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.25)",
                       borderRadius: "50%",
                       transition: "all 0.3s",
                     }}
@@ -719,7 +728,7 @@ const GrievanceManagement = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 />
               </div>
@@ -753,7 +762,7 @@ const GrievanceManagement = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option>General</option>
@@ -785,7 +794,7 @@ const GrievanceManagement = () => {
                       borderRadius: "8px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option>Low</option>
@@ -821,7 +830,7 @@ const GrievanceManagement = () => {
                     borderRadius: "8px",
                     backgroundColor: "var(--input-bg)",
                     border: "1px solid var(--border)",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 ></textarea>
               </div>
@@ -836,7 +845,7 @@ const GrievanceManagement = () => {
                     borderRadius: "10px",
                     border: "1px solid var(--border)",
                     fontWeight: "600",
-                    color: "white",
+                    color: "var(--text-main)",
                   }}
                 >
                   Cancel
@@ -911,6 +920,157 @@ const GrievanceManagement = () => {
         </div>
       </header>
       <main>{renderView()}</main>
+
+      <AnimatePresence>
+        {selectedGrievance && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 120,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+            }}
+            onClick={() => setSelectedGrievance(null)}
+          >
+            <motion.div
+              initial={{ y: 16, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 12, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="glass-card"
+              style={{
+                width: "min(760px, 100%)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                padding: "22px",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <h3 style={{ fontSize: "20px", fontWeight: "800" }}>
+                    Complaint Details
+                  </h3>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    ID: {selectedGrievance.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedGrievance(null)}
+                  style={{ color: "var(--text-main)" }}
+                >
+                  <XCircle size={22} />
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: "10px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div className="glass-card" style={{ padding: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Subject
+                  </div>
+                  <div style={{ fontWeight: "700", marginTop: "4px" }}>
+                    {selectedGrievance.subject}
+                  </div>
+                </div>
+                <div className="glass-card" style={{ padding: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Category
+                  </div>
+                  <div style={{ fontWeight: "700", marginTop: "4px" }}>
+                    {selectedGrievance.category}
+                  </div>
+                </div>
+                <div className="glass-card" style={{ padding: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Severity
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: "700",
+                      marginTop: "4px",
+                      color: getSeverityColor(selectedGrievance.severity),
+                    }}
+                  >
+                    {selectedGrievance.severity}
+                  </div>
+                </div>
+                <div className="glass-card" style={{ padding: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Status
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: "700",
+                      marginTop: "4px",
+                      color: getStatusColor(selectedGrievance.status),
+                    }}
+                  >
+                    {selectedGrievance.status}
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: "14px" }}>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--text-muted)",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Detailed Description
+                </div>
+                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.45 }}>
+                  {selectedGrievance.description || "No description provided."}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  marginTop: "14px",
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span>
+                  Reported:{" "}
+                  {new Date(selectedGrievance.createdAt).toLocaleString()}
+                </span>
+                <span>
+                  Anonymous: {selectedGrievance.isAnonymous ? "Yes" : "No"}
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

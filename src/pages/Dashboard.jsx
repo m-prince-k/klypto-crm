@@ -559,7 +559,7 @@ const Dashboard = () => {
                       justifyContent: "center",
                       fontSize: "12px",
                       fontWeight: "bold",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     {lead.name[0]}

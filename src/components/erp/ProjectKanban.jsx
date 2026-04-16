@@ -854,7 +854,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "15px",
                     }}
                   />
@@ -884,7 +884,7 @@ const ProjectKanban = () => {
                         borderRadius: "10px",
                         backgroundColor: "var(--input-bg)",
                         border: "1px solid var(--border)",
-                        color: "white",
+                        color: "var(--text-main)",
                         appearance: "none",
                       }}
                     >
@@ -931,7 +931,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "15px",
                       resize: "none",
                     }}
@@ -960,7 +960,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                     }}
                   >
                     <option value="">Select employee</option>
@@ -997,7 +997,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "15px",
                     }}
                   />
@@ -1138,7 +1138,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "15px",
                     }}
                   />
@@ -1171,7 +1171,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "15px",
                       resize: "none",
                     }}
@@ -1203,7 +1203,7 @@ const ProjectKanban = () => {
                       borderRadius: "10px",
                       backgroundColor: "var(--input-bg)",
                       border: "1px solid var(--border)",
-                      color: "white",
+                      color: "var(--text-main)",
                       fontSize: "14px",
                     }}
                   >
