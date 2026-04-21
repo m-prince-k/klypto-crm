@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLayout } from "../hooks/useLayout";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -91,6 +92,8 @@ const StatCard = ({ title, value, change, icon, isPositive, trend }) => (
 );
 
 const Dashboard = () => {
+  // Ensure layout shell loads instantly
+  useLayout();
   const { user } = useSelector((state) => state.auth);
   const [hrmsStats, setHrmsStats] = useState(null);
   const [crmStats, setCrmStats] = useState(null);

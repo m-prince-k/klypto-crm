@@ -27,6 +27,7 @@ import UserManagement from "./pages/UserManagement";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { usePageSEO } from "./hooks/usePageSEO";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useLayout } from "./hooks/useLayout";
 import { restoreAuth } from "./store/auth/authSlice";
 import { useState } from "react";
 import { Toaster } from "sonner";
@@ -42,6 +43,9 @@ const SEOHelper = () => {
  * Only shown when user is authenticated
  */
 function AppLayout() {
+  // Ensure layout shell loads instantly
+  useLayout();
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [apiPendingCount, setApiPendingCount] = useState(0);
 
