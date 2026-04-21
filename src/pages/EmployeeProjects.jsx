@@ -54,6 +54,8 @@ const EmployeeProjects = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
+  const [pendingTitles, setPendingTitles] = useState([]);
+  const [currentTitle, setCurrentTitle] = useState("");
 
   const fetchProjectsData = useCallback(async () => {
     setLoading(true);
@@ -167,6 +169,8 @@ const EmployeeProjects = () => {
       dueDate: "",
       projectId: "",
     });
+    setPendingTitles([]);
+    setCurrentTitle("");
     setIsEditing(false);
     setEditingTaskId(null);
   };
@@ -181,16 +185,40 @@ const EmployeeProjects = () => {
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
       projectId: task.projectId || "",
     });
+    setCurrentTitle(task.title);
     setIsEditing(true);
     setEditingTaskId(task.id);
     setShowCreateTaskModal(true);
   };
 
+  const addPendingTitle = (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      if (currentTitle.trim()) {
+        e.preventDefault();
+        if (!isEditing) {
+          setPendingTitles(prev => [...prev, currentTitle.trim()]);
+          setCurrentTitle("");
+        }
+      }
+    }
+  };
+
+  const removePendingTitle = (index) => {
+    setPendingTitles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreateTask = async (event) => {
     event.preventDefault();
-    if (!taskForm.title.trim()) {
+    
+    const titlesToCreate = isEditing 
+      ? [currentTitle.trim()] 
+      : pendingTitles.length > 0 
+        ? pendingTitles 
+        : currentTitle.trim() ? [currentTitle.trim()] : [];
+
+    if (titlesToCreate.length === 0) {
       setError("Task title is required.");
-      toast.error("Task title is required");
+      toast.error("At least one task title is required");
       return;
     }
 
@@ -201,7 +229,7 @@ const EmployeeProjects = () => {
     try {
       if (isEditing) {
         await apiClient.patch(`/projects/tasks/${editingTaskId}`, {
-          title: taskForm.title.trim(),
+          title: currentTitle.trim(),
           description: taskForm.description.trim() || undefined,
           priority: taskForm.priority,
           dueDate: taskForm.dueDate
@@ -212,17 +240,20 @@ const EmployeeProjects = () => {
         setSuccessMessage("Task updated successfully.");
         toast.success("Task updated successfully");
       } else {
-        await apiClient.post("/projects/tasks", {
-          title: taskForm.title.trim(),
-          description: taskForm.description.trim() || undefined,
-          priority: taskForm.priority,
-          dueDate: taskForm.dueDate
-            ? new Date(taskForm.dueDate).toISOString()
-            : undefined,
-          projectId: taskForm.projectId || undefined,
-        });
-        setSuccessMessage("Task created successfully.");
-        toast.success("Task created successfully");
+        // Sequential creation for batch
+        for (const title of titlesToCreate) {
+          await apiClient.post("/projects/tasks", {
+            title: title,
+            description: taskForm.description.trim() || undefined,
+            priority: taskForm.priority,
+            dueDate: taskForm.dueDate
+              ? new Date(taskForm.dueDate).toISOString()
+              : undefined,
+            projectId: taskForm.projectId || undefined,
+          });
+        }
+        setSuccessMessage(titlesToCreate.length > 1 ? `Success! ${titlesToCreate.length} tasks created.` : "Task created successfully.");
+        toast.success(titlesToCreate.length > 1 ? `${titlesToCreate.length} tasks created` : "Task created successfully");
       }
       setShowCreateTaskModal(false);
       resetTaskForm();
@@ -271,7 +302,7 @@ const EmployeeProjects = () => {
       className="employee-portal"
       style={{
         width: "100%",
-        maxWidth: "1200px",
+        maxWidth: "1600px",
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
@@ -483,12 +514,14 @@ const EmployeeProjects = () => {
                     style={{
                       border: "1px solid var(--border)",
                       borderRadius: "10px",
-                      backgroundColor: "var(--column-bg)",
-                      padding: "10px",
-                      minHeight: "240px",
+                      backgroundColor: "rgba(30, 41, 59, 0.4)",
+                      padding: "12px",
+                      minHeight: "400px",
                       display: "grid",
-                      gap: "8px",
+                      gap: "12px",
                       alignContent: "start",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "inset 0 0 20px rgba(0,0,0,0.2)"
                     }}
                   >
                     <div
@@ -497,19 +530,22 @@ const EmployeeProjects = () => {
                         justifyContent: "space-between",
                         alignItems: "center",
                         gap: "8px",
-                        marginBottom: "4px",
+                        marginBottom: "8px",
+                        padding: "0 4px"
                       }}
                     >
-                      <span style={{ fontSize: "12px", fontWeight: "800" }}>
+                      <span style={{ fontSize: "13px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px", color: "var(--text-main)" }}>
                         {column.title}
                       </span>
                       <span
                         style={{
-                          padding: "2px 8px",
-                          borderRadius: "999px",
+                          padding: "2px 10px",
+                          borderRadius: "100px",
                           fontSize: "11px",
-                          backgroundColor: "var(--input-bg)",
-                          color: "var(--text-muted)",
+                          fontWeight: "700",
+                          backgroundColor: "rgba(14, 165, 233, 0.1)",
+                          color: "var(--primary)",
+                          border: "1px solid rgba(14, 165, 233, 0.2)"
                         }}
                       >
                         {columnTasks.length}
@@ -519,27 +555,34 @@ const EmployeeProjects = () => {
                     {columnTasks.length === 0 ? (
                       <div
                         style={{
+                          padding: "20px",
+                          textAlign: "center",
                           fontSize: "12px",
                           color: "var(--text-muted)",
-                          opacity: 0.85,
+                          border: "1px dashed var(--border)",
+                          borderRadius: "10px",
+                          backgroundColor: "rgba(255,255,255,0.02)"
                         }}
                       >
-                        No tasks
+                        No tasks in queue
                       </div>
                     ) : (
                       columnTasks.map((task) => (
                         <div
                           key={task.id}
-                          className="glass-card"
+                          className="glass-card task-card-premium"
                           style={{
                             border: "1px solid var(--border)",
-                            borderRadius: "8px",
-                            padding: "10px",
+                            borderRadius: "12px",
+                            padding: "14px",
                             display: "grid",
-                            gap: "8px",
+                            gap: "10px",
+                            background: "rgba(255,255,255,0.03)",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            cursor: "default"
                           }}
                         >
-                          <div style={{ fontSize: "13px", fontWeight: "700" }}>
+                          <div style={{ fontSize: "14px", fontWeight: "700", lineHeight: "1.4" }}>
                             {task.title}
                           </div>
                           <div
@@ -725,15 +768,11 @@ const EmployeeProjects = () => {
                     <Layout size={14} /> Task Title
                   </label>
                   <input
-                    required
-                    placeholder="Enter a descriptive title..."
-                    value={taskForm.title}
-                    onChange={(event) =>
-                      setTaskForm((prev) => ({
-                        ...prev,
-                        title: event.target.value,
-                      }))
-                    }
+                    required={!isEditing && pendingTitles.length === 0}
+                    placeholder={isEditing ? "Edit task title..." : "Type title and press Enter to add multiple..."}
+                    value={currentTitle}
+                    onChange={(event) => setCurrentTitle(event.target.value)}
+                    onKeyDown={addPendingTitle}
                     className="glass-card"
                     style={{ 
                       ...inputStyle, 
@@ -742,6 +781,36 @@ const EmployeeProjects = () => {
                       padding: "12px 14px"
                     }}
                   />
+                  {pendingTitles.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px" }}>
+                      {pendingTitles.map((title, idx) => (
+                        <div 
+                          key={idx}
+                          style={{ 
+                            background: "rgba(14, 165, 233, 0.15)",
+                            color: "var(--primary)",
+                            padding: "4px 10px",
+                            borderRadius: "100px",
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            border: "1px solid rgba(14, 165, 233, 0.3)"
+                          }}
+                        >
+                          {title}
+                          <button 
+                            type="button" 
+                            onClick={() => removePendingTitle(idx)}
+                            style={{ color: "var(--primary)", opacity: 0.7, padding: "2px" }}
+                          >
+                            <X size={10} strokeWidth={3} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group-modern">
