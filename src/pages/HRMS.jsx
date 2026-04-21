@@ -10,6 +10,7 @@ import {
   Laptop2,
   Plus,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +20,7 @@ import Attendance from "../components/hrms/Attendance";
 import LeaveManagement from "../components/hrms/LeaveManagement";
 import PayrollStructure from "../components/hrms/PayrollStructure";
 import PerformanceReviews from "../components/hrms/PerformanceReviews";
+import PoliciesHub from "../components/hrms/PoliciesHub";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -65,6 +67,7 @@ const HR = ({ initialTab = "overview" }) => {
     { id: "leave", label: "Leave", icon: <CalendarCheck2 size={18} /> },
     { id: "payroll", label: "Payroll", icon: <Wallet2 size={18} /> },
     { id: "performance", label: "Performance", icon: <Award size={18} /> },
+    { id: "policies", label: "Policies", icon: <FileText size={18} /> },
   ];
 
   useEffect(() => {
@@ -261,6 +264,11 @@ const HR = ({ initialTab = "overview" }) => {
           {activeTab === "performance" && (
             <TabContent key="performance" showAdd={false}>
               <PerformanceReviews />
+            </TabContent>
+          )}
+          {activeTab === "policies" && (
+            <TabContent key="policies" title="Office Policies" showAdd={false}>
+              <PoliciesHub />
             </TabContent>
           )}
         </AnimatePresence>

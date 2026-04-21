@@ -1,17 +1,98 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertCircle,
+  BookOpen,
+  X,
+  ChevronRight,
+  Loader,
   Clock3,
   Wallet2,
   UserCircle2,
   CalendarDays,
   ShieldAlert,
-  Loader,
   CheckCircle2,
-  AlertCircle,
+  TrendingUp,
+  ArrowDownCircle,
+  PlusCircle,
+  ArrowRight,
+  ShieldCheck,
+  Calendar,
+  Layers,
+  Award,
 } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../api/apiClient";
+import Skeleton from "../components/common/Skeleton";
+
+const LiveClock = () => {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--primary)" }}>
+      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  );
+};
+
+const EmployeePortalSkeleton = () => (
+  <div style={{ animation: "fadeIn 0.5s ease" }}>
+    <header style={{ marginBottom: "32px" }}>
+      <Skeleton height="32px" width="280px" style={{ marginBottom: "8px" }} />
+      <Skeleton height="20px" width="100%" maxWidth="450px" />
+    </header>
+
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", marginBottom: "40px" }}>
+      <div className="glass-card" style={{ padding: "24px", display: "flex", alignItems: "center", gap: "20px" }}>
+        <Skeleton circle height="80px" />
+        <div style={{ flex: 1 }}>
+          <Skeleton height="24px" width="150px" style={{ marginBottom: "8px" }} />
+          <Skeleton height="16px" width="100px" />
+        </div>
+      </div>
+      <div className="glass-card" style={{ padding: "24px", display: "flex", justifyContent: "space-around" }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ textAlign: "center" }}>
+            <Skeleton height="24px" width="40px" style={{ marginBottom: "8px", margin: "0 auto 8px" }} />
+            <Skeleton height="14px" width="60px" />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)", gap: "24px" }}>
+      <div className="glass-card" style={{ padding: "24px" }}>
+        <Skeleton height="24px" width="180px" style={{ marginBottom: "20px" }} />
+        <div style={{ display: "grid", gap: "16px" }}>
+          <Skeleton height="45px" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Skeleton height="45px" />
+            <Skeleton height="45px" />
+          </div>
+          <Skeleton height="100px" />
+          <Skeleton height="45px" />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div className="glass-card" style={{ padding: "24px" }}>
+          <Skeleton height="24px" width="200px" style={{ marginBottom: "20px" }} />
+          <div style={{ display: "grid", gap: "12px" }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "12px" }}>
+                <Skeleton height="18px" width="120px" style={{ marginBottom: "8px" }} />
+                <Skeleton height="14px" width="100%" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const initialLeaveForm = {
   type: "Annual",
@@ -24,7 +105,6 @@ const initialComplaintForm = {
   category: "General",
   description: "",
   severity: "Medium",
-  isAnonymous: false,
 };
 
 const toCurrency = (value) =>
@@ -71,6 +151,8 @@ const EmployeePortal = () => {
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [viewingPolicy, setViewingPolicy] = useState(null);
 
   const [leaveForm, setLeaveForm] = useState(initialLeaveForm);
   const [complaintForm, setComplaintForm] = useState(initialComplaintForm);
@@ -113,6 +195,7 @@ const EmployeePortal = () => {
         payrollRes,
         leaveRes,
         grievanceRes,
+        policiesRes,
       ] = await Promise.all([
         apiClient.get("/employees"),
         apiClient.get(`/attendance?date=${todayIsoDate}`),
@@ -120,6 +203,7 @@ const EmployeePortal = () => {
         apiClient.get("/payroll/records"),
         apiClient.get("/leaves"),
         apiClient.get("/grievances"),
+        apiClient.get("/policies"),
       ]);
 
       const employeeRecord =
@@ -145,6 +229,7 @@ const EmployeePortal = () => {
       setPayrollRecords(payrollHistory);
       setLeaveRequests(myLeaves);
       setComplaints(myComplaints);
+      setPolicies(policiesRes.data);
     } catch (fetchError) {
       const message =
         fetchError.response?.data?.message ||
@@ -291,43 +376,67 @@ const EmployeePortal = () => {
       complaint.status === complaintStatusFilter,
   );
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  }, []);
+
   if (loading) {
-    return (
-      <div
-        style={{
-          height: "320px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Loader className="spinner" size={30} />
-      </div>
-    );
+    return <EmployeePortalSkeleton />;
   }
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       className="employee-portal"
       style={{
         width: "100%",
-        maxWidth: "1200px",
+        maxWidth: "1300px",
         margin: "0 auto",
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
+        gap: "24px",
+        paddingBottom: "40px",
       }}
     >
-      <div className="glass-card" style={{ padding: "20px" }}>
-        <h1
-          style={{ fontSize: "28px", fontWeight: "800", marginBottom: "6px" }}
-        >
-          Employee Self Service
-        </h1>
-        <p style={{ color: "var(--text-muted)" }}>
-          Check in, view your salary and profile details, apply leaves, and
-          raise complaints.
-        </p>
+      {/* Header Section */}
+      <div 
+        className="glass-card" 
+        style={{ 
+          padding: "32px", 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          background: "linear-gradient(to right, var(--bg-card), rgba(14, 165, 233, 0.03))",
+          overflow: "hidden",
+          position: "relative"
+        }}
+      >
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <h1 style={{ fontSize: "32px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
+            {greeting}, {user?.fullName?.split(" ")[0] || "Employee"}! 👋
+          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--text-muted)" }}>
+            <Calendar size={14} />
+            <span style={{ fontSize: "14px", fontWeight: "500" }}>
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+            <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "var(--border)" }} />
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-main)" }}>
+              Twenty CRM Official Portal
+            </span>
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end", marginBottom: "4px" }}>
+            <div className="status-pulse" />
+            <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)" }}>LIVE FEED ACTIVE</span>
+          </div>
+          <LiveClock />
+        </div>
       </div>
 
       {error && (
@@ -375,98 +484,155 @@ const EmployeePortal = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "14px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "20px",
             }}
           >
-            <div className="glass-card" style={{ padding: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "8px",
-                }}
-              >
-                <Clock3 size={18} />
-                <span style={{ fontWeight: "700" }}>Today Check-in</span>
+            {/* Quick Check-In Card */}
+            <div className="glass-card" style={{ padding: "24px", position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ padding: "10px", borderRadius: "12px", background: "rgba(14, 165, 233, 0.1)", color: "var(--primary)" }}>
+                    <Clock3 size={24} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: "800", fontSize: "16px" }}>Attendance</h3>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Daily Check-in</p>
+                  </div>
+                </div>
+                {todayAttendance && (
+                  <div className="premium-badge premium-badge-blue">PRESENT</div>
+                )}
               </div>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "var(--text-muted)",
-                  marginBottom: "10px",
-                }}
-              >
-                {todayAttendance?.checkIn
-                  ? `Checked in at ${new Date(todayAttendance.checkIn).toLocaleTimeString()}`
-                  : "No check-in recorded for today"}
+              
+              <div style={{ marginBottom: "24px" }}>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "4px" }}>Check-in Status</p>
+                <h4 style={{ fontSize: "20px", fontWeight: "800" }}>
+                  {todayAttendance?.checkIn
+                    ? new Date(todayAttendance.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : "Not Started"}
+                </h4>
               </div>
+
               <button
                 className="btn-primary"
                 onClick={handleCheckIn}
                 disabled={!canCheckIn || actionLoading === "checkin"}
+                style={{ 
+                  width: "100%", 
+                  padding: "14px", 
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  fontWeight: "700"
+                }}
               >
-                {actionLoading === "checkin"
-                  ? "Saving..."
-                  : canCheckIn
-                    ? "Check In"
-                    : "Checked In"}
+                {actionLoading === "checkin" ? (
+                  <Loader size={18} className="spinner" />
+                ) : (
+                  <>
+                    <CheckCircle2 size={18} />
+                    {canCheckIn ? "Check In Now" : "Currently Present"}
+                  </>
+                )}
               </button>
             </div>
 
-            <div className="glass-card" style={{ padding: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "8px",
-                }}
-              >
-                <Wallet2 size={18} />
-                <span style={{ fontWeight: "700" }}>Salary Details</span>
+            {/* Premium Salary Card */}
+            <div className="glass-card salary-card-net" style={{ padding: "24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", position: "relative", zIndex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ padding: "10px", borderRadius: "12px", background: "rgba(14, 165, 233, 0.15)", color: "var(--primary)" }}>
+                    <Wallet2 size={24} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: "800", fontSize: "16px" }}>Salary Summary</h3>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Latest Payout</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ fontSize: "11px", fontWeight: "700", color: "var(--primary)", textTransform: "uppercase" }}>Monthly Net</p>
+                  <h4 style={{ fontSize: "22px", fontWeight: "900", color: "var(--text-main)" }}>
+                    ${latestPayroll ? toCurrency(latestPayroll.netPay) : toCurrency(salaryStructure?.basicSalary) || "0"}
+                  </h4>
+                </div>
               </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Basic:{" "}
-                {salaryStructure
-                  ? toCurrency(salaryStructure.basicSalary)
-                  : "-"}
-              </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Allowances:{" "}
-                {salaryStructure ? toCurrency(salaryStructure.allowances) : "-"}
-              </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Deductions:{" "}
-                {salaryStructure ? toCurrency(salaryStructure.deductions) : "-"}
-              </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Net (latest):{" "}
-                {latestPayroll ? toCurrency(latestPayroll.netPay) : "-"}
+
+              <div style={{ display: "grid", gap: "12px", position: "relative", zIndex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                  <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <PlusCircle size={14} color="#10b981" /> Basic Salary
+                  </span>
+                  <span style={{ fontWeight: "700" }}>{salaryStructure ? toCurrency(salaryStructure.basicSalary) : "-"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                  <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <TrendingUp size={14} color="#38bdf8" /> Allowances
+                  </span>
+                  <span style={{ fontWeight: "700" }}>{salaryStructure ? toCurrency(salaryStructure.allowances) : "-"}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                  <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <ArrowDownCircle size={14} color="#ef4444" /> Deductions
+                  </span>
+                  <span style={{ fontWeight: "700", color: "#ef4444" }}>-{salaryStructure ? toCurrency(salaryStructure.deductions) : "-"}</span>
+                </div>
+                <div style={{ marginTop: "8px", paddingTop: "12px", borderTop: "1px dashed var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                   <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)" }}>PAY SLIP</span>
+                   <button style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                     View History <ChevronRight size={14} />
+                   </button>
+                </div>
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: "16px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "8px",
-                }}
-              >
-                <UserCircle2 size={18} />
-                <span style={{ fontWeight: "700" }}>My Details</span>
+            {/* Profile Detail Card */}
+            <div className="glass-card" style={{ padding: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+                <div 
+                  style={{ 
+                    width: "60px", 
+                    height: "60px", 
+                    borderRadius: "16px", 
+                    background: "linear-gradient(135deg, var(--primary), #38bdf8)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "24px",
+                    fontWeight: "900",
+                    color: "white",
+                    boxShadow: "0 10px 15px -3px rgba(14, 165, 233, 0.4)"
+                  }}
+                >
+                  {user?.fullName?.[0] || "U"}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "18px", fontWeight: "800" }}>{user?.fullName || "Welcome!" }</h3>
+                  <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+                    <div className="premium-badge premium-badge-blue">{employee?.department || "General"}</div>
+                    <div className="premium-badge" style={{ background: "rgba(255,255,255,0.05)" }}>{employee?.role || "Team Member"}</div>
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Name: {employee?.name || user?.fullName || "-"}
-              </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Dept: {employee?.department || "-"}
-              </div>
-              <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-                Role: {employee?.role || "-"}
+
+              <div style={{ display: "grid", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                  <ShieldCheck size={16} color="var(--text-muted)" />
+                  <span style={{ color: "var(--text-muted)" }}>Emp ID:</span>
+                  <span style={{ fontWeight: "700" }}>{employee?.id?.slice(-6).toUpperCase() || "N/A"}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                  <Award size={16} color="var(--text-muted)" />
+                  <span style={{ color: "var(--text-muted)" }}>Status:</span>
+                  <span style={{ fontWeight: "700", color: "#10b981" }}>Active</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                  <Layers size={16} color="var(--text-muted)" />
+                  <span style={{ color: "var(--text-muted)" }}>Level:</span>
+                  <span style={{ fontWeight: "700" }}>Standard</span>
+                </div>
               </div>
             </div>
           </div>
@@ -493,82 +659,96 @@ const EmployeePortal = () => {
 
               <form
                 onSubmit={handleLeaveSubmit}
-                style={{ display: "grid", gap: "10px" }}
+                style={{ display: "grid", gap: "16px" }}
               >
-                <label style={fieldLabelStyle}>Leave Type</label>
-                <select
-                  value={leaveForm.type}
-                  onChange={(event) =>
-                    setLeaveForm((prev) => ({
-                      ...prev,
-                      type: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
+                <div className="form-group-modern">
+                  <label>Leave Type</label>
+                  <select
+                    value={leaveForm.type}
+                    onChange={(event) =>
+                      setLeaveForm((prev) => ({
+                        ...prev,
+                        type: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ ...inputStyle, borderRadius: "10px" }}
+                  >
+                    {[
+                      "Annual",
+                      "Sick",
+                      "Casual",
+                      "Maternity",
+                      "Paternity",
+                      "Unpaid",
+                    ].map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group-modern">
+                    <label>Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={leaveForm.startDate}
+                      onChange={(event) =>
+                        setLeaveForm((prev) => ({
+                          ...prev,
+                          startDate: event.target.value,
+                        }))
+                      }
+                      className="glass-card"
+                      style={{ ...inputStyle, borderRadius: "10px" }}
+                    />
+                  </div>
+                  <div className="form-group-modern">
+                    <label>End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={leaveForm.endDate}
+                      onChange={(event) =>
+                        setLeaveForm((prev) => ({
+                          ...prev,
+                          endDate: event.target.value,
+                        }))
+                      }
+                      className="glass-card"
+                      style={{ ...inputStyle, borderRadius: "10px" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-modern">
+                  <label>Reason for Leave</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Provide a brief explanation..."
+                    value={leaveForm.reason}
+                    onChange={(event) =>
+                      setLeaveForm((prev) => ({
+                        ...prev,
+                        reason: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ ...inputStyle, resize: "vertical", borderRadius: "10px" }}
+                  />
+                </div>
+
+                <button 
+                  className="btn-primary" 
+                  disabled={leaveSubmitDisabled}
+                  style={{ padding: "14px", borderRadius: "10px", fontWeight: "700" }}
                 >
-                  {[
-                    "Annual",
-                    "Sick",
-                    "Casual",
-                    "Maternity",
-                    "Paternity",
-                    "Unpaid",
-                  ].map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-
-                <label style={fieldLabelStyle}>Start Date</label>
-                <input
-                  type="date"
-                  required
-                  value={leaveForm.startDate}
-                  onChange={(event) =>
-                    setLeaveForm((prev) => ({
-                      ...prev,
-                      startDate: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
-                />
-
-                <label style={fieldLabelStyle}>End Date</label>
-                <input
-                  type="date"
-                  required
-                  value={leaveForm.endDate}
-                  onChange={(event) =>
-                    setLeaveForm((prev) => ({
-                      ...prev,
-                      endDate: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
-                />
-
-                <textarea
-                  rows={3}
-                  placeholder="Reason (optional)"
-                  value={leaveForm.reason}
-                  onChange={(event) =>
-                    setLeaveForm((prev) => ({
-                      ...prev,
-                      reason: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={{ ...inputStyle, resize: "vertical" }}
-                />
-
-                <button className="btn-primary" disabled={leaveSubmitDisabled}>
                   {actionLoading === "leave"
-                    ? "Submitting..."
-                    : "Submit Leave Request"}
+                    ? "Submitting Request..."
+                    : "Finalize Leave Request"}
                 </button>
               </form>
 
@@ -686,104 +866,92 @@ const EmployeePortal = () => {
 
               <form
                 onSubmit={handleComplaintSubmit}
-                style={{ display: "grid", gap: "10px" }}
+                style={{ display: "grid", gap: "16px" }}
               >
-                <label style={fieldLabelStyle}>Subject</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Subject"
-                  value={complaintForm.subject}
-                  onChange={(event) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      subject: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
-                />
-
-                <label style={fieldLabelStyle}>Category</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Category"
-                  value={complaintForm.category}
-                  onChange={(event) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      category: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
-                />
-
-                <label style={fieldLabelStyle}>Severity</label>
-                <select
-                  value={complaintForm.severity}
-                  onChange={(event) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      severity: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={inputStyle}
-                >
-                  {["Low", "Medium", "High", "Critical"].map((severity) => (
-                    <option key={severity} value={severity}>
-                      {severity}
-                    </option>
-                  ))}
-                </select>
-
-                <label style={fieldLabelStyle}>Description</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Describe your complaint"
-                  value={complaintForm.description}
-                  onChange={(event) =>
-                    setComplaintForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                  className="glass-card"
-                  style={{ ...inputStyle, resize: "vertical" }}
-                />
-
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    color: "var(--text-muted)",
-                    fontSize: "13px",
-                  }}
-                >
+                <div className="form-group-modern">
+                  <label>Subject</label>
                   <input
-                    type="checkbox"
-                    checked={complaintForm.isAnonymous}
+                    type="text"
+                    required
+                    placeholder="Brief title of your complaint"
+                    value={complaintForm.subject}
                     onChange={(event) =>
                       setComplaintForm((prev) => ({
                         ...prev,
-                        isAnonymous: event.target.checked,
+                        subject: event.target.value,
                       }))
                     }
+                    className="glass-card"
+                    style={{ ...inputStyle, borderRadius: "10px" }}
                   />
-                  Submit anonymously
-                </label>
+                </div>
 
-                <button
-                  className="btn-primary"
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group-modern">
+                    <label>Category</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Workplace, Tech"
+                      value={complaintForm.category}
+                      onChange={(event) =>
+                        setComplaintForm((prev) => ({
+                          ...prev,
+                          category: event.target.value,
+                        }))
+                      }
+                      className="glass-card"
+                      style={{ ...inputStyle, borderRadius: "10px" }}
+                    />
+                  </div>
+                  <div className="form-group-modern">
+                    <label>Severity</label>
+                    <select
+                      value={complaintForm.severity}
+                      onChange={(event) =>
+                        setComplaintForm((prev) => ({
+                          ...prev,
+                          severity: event.target.value,
+                        }))
+                      }
+                      className="glass-card"
+                      style={{ ...inputStyle, borderRadius: "10px" }}
+                    >
+                      {["Low", "Medium", "High", "Critical"].map((severity) => (
+                        <option key={severity} value={severity}>
+                          {severity}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group-modern">
+                  <label>Detailed Description</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Please describe the issue in detail..."
+                    value={complaintForm.description}
+                    onChange={(event) =>
+                      setComplaintForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ ...inputStyle, resize: "vertical", borderRadius: "10px" }}
+                  />
+                </div>
+
+                <button 
+                  className="btn-primary" 
                   disabled={complaintSubmitDisabled}
+                  style={{ padding: "14px", borderRadius: "10px", fontWeight: "700" }}
                 >
                   {actionLoading === "complaint"
-                    ? "Submitting..."
-                    : "Submit Complaint"}
+                    ? "Posting Complaint..."
+                    : "Submit Official Complaint"}
                 </button>
               </form>
 
@@ -895,10 +1063,247 @@ const EmployeePortal = () => {
               </div>
             </div>
           </div>
+
+          <section style={{ marginTop: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+              <BookOpen size={22} color="var(--primary)" />
+              <h2 style={{ fontSize: "20px", fontWeight: "800" }}>Office Policies & Guidelines</h2>
+            </div>
+            
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {policies.length === 0 ? (
+                <div className="glass-card" style={{ padding: "24px", textAlign: "center", color: "var(--text-muted)", gridColumn: "1/-1" }}>
+                  No office policies have been published yet.
+                </div>
+              ) : (
+                policies.map((policy) => (
+                  <motion.div
+                    key={policy.id}
+                    whileHover={{ y: -5 }}
+                    className="glass-card"
+                    style={{
+                      padding: "24px",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                      border: "1px solid var(--border)",
+                      transition: "all 0.2s ease"
+                    }}
+                    onClick={() => setViewingPolicy(policy)}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ padding: "10px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.08)", color: "var(--primary)" }}>
+                        {policy.category?.toLowerCase() === "safety" || policy.category?.toLowerCase() === "security" ? <ShieldCheck size={20} /> : <BookOpen size={20} />}
+                      </div>
+                      <div className="premium-badge" style={{ background: "rgba(255,255,255,0.03)" }}>{policy.category}</div>
+                    </div>
+                    
+                    <div>
+                      <h3 style={{ fontSize: "17px", fontWeight: "800", marginBottom: "8px", color: "var(--text-main)" }}>{policy.title}</h3>
+                      <div
+                        className="policy-preview-content"
+                        style={{
+                          fontSize: "13px",
+                          lineHeight: "1.5",
+                          color: "var(--text-muted)",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                        dangerouslySetInnerHTML={{ __html: policy.content }}
+                      />
+                    </div>
+
+                    <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "6px", color: "var(--primary)", fontSize: "13px", fontWeight: "700" }}>
+                      Read Documentation <ArrowRight size={14} />
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </section>
         </>
       )}
-    </div>
+
+      {/* Policy View Modal */}
+      {viewingPolicy && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: "100%",
+              maxWidth: "850px",
+              padding: "48px",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              position: "relative",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <button
+              onClick={() => setViewingPolicy(null)}
+              style={{
+                position: "absolute",
+                right: "24px",
+                top: "24px",
+                padding: "10px",
+                color: "var(--text-muted)",
+                backgroundColor: "rgba(255,255,255,0.05)",
+                borderRadius: "50%",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
+            >
+              <X size={20} />
+            </button>
+
+            <div style={{ marginBottom: "40px", borderBottom: "1px solid var(--border)", paddingBottom: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "800",
+                    color: "var(--primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "1.5px",
+                    backgroundColor: "rgba(var(--primary-rgb), 0.1)",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  {viewingPolicy.category}
+                </span>
+                <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "var(--border)" }} />
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>
+                  Verified Company Document
+                </span>
+              </div>
+              <h2
+                style={{
+                  fontSize: "36px",
+                  fontWeight: "900",
+                  lineHeight: "1.2",
+                  marginBottom: "16px",
+                  letterSpacing: "-0.5px",
+                  color: "var(--text-main)",
+                }}
+              >
+                {viewingPolicy.title}
+              </h2>
+            </div>
+
+            <div
+              className="policy-doc-container"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.02)",
+                borderRadius: "16px",
+                padding: "32px",
+                border: "1px solid var(--border)",
+                marginTop: "8px",
+              }}
+            >
+              <div
+                className="policy-full-content"
+                style={{
+                  fontSize: "16px",
+                  lineHeight: "1.8",
+                  color: "rgba(255, 255, 255, 0.9)",
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                }}
+                dangerouslySetInnerHTML={{ __html: viewingPolicy.content }}
+              />
+            </div>
+
+            <button
+              onClick={() => setViewingPolicy(null)}
+              className="btn-primary"
+              style={{ 
+                marginTop: "40px", 
+                width: "100%",
+                padding: "16px",
+                fontSize: "16px",
+                fontWeight: "800",
+                borderRadius: "12px",
+                boxShadow: "0 10px 20px -5px rgba(var(--primary-rgb), 0.3)"
+              }}
+            >
+              I have read and acknowledged
+            </button>
+          </div>
+        </div>
+      )}
+
+    </motion.div>
   );
 };
 
-export default EmployeePortal;
+const styles = `  /* Policy Content Styling */
+  .policy-full-content {
+    max-width: 100%;
+  }
+  .policy-full-content ul, .policy-full-content ol {
+    padding-left: 20px;
+    margin-bottom: 24px;
+    margin-top: 12px;
+    list-style-position: outside;
+  }
+  .policy-full-content li {
+    margin-bottom: 12px;
+    padding-left: 12px;
+  }
+  .policy-full-content p {
+    margin-bottom: 20px;
+  }
+  .policy-full-content strong {
+    color: var(--text-main);
+    font-weight: 700;
+  }
+  .policy-full-content h1, .policy-full-content h2, .policy-full-content h3 {
+    margin-top: 32px;
+    margin-bottom: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+  }
+  .policy-full-content h1 { font-size: 26px; }
+  .policy-full-content h2 { font-size: 22px; }
+  .policy-full-content h3 { font-size: 19px; }
+
+  .policy-preview-content * {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+  }
+`;
+
+const StyleInjector = () => <style>{styles}</style>;
+
+export default () => (
+  <>
+    <StyleInjector />
+    <EmployeePortal />
+  </>
+);

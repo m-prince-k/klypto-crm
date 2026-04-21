@@ -23,6 +23,77 @@ import {
   hasModuleAccess,
 } from "../utils/access";
 import apiClient from "../api/apiClient";
+import Skeleton from "../components/common/Skeleton";
+
+const DashboardSkeleton = () => (
+  <div style={{ animation: "fadeIn 0.5s ease" }}>
+    <header style={{ marginBottom: "32px" }}>
+      <Skeleton height="32px" width="300px" style={{ marginBottom: "12px" }} />
+      <Skeleton height="20px" width="100%" maxWidth="500px" />
+    </header>
+
+    <div
+      className="glass-card"
+      style={{
+        padding: "16px 20px",
+        marginBottom: "24px",
+        display: "flex",
+        gap: "10px",
+      }}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Skeleton key={i} height="30px" width="100px" borderRadius="999px" />
+      ))}
+    </div>
+
+    <div style={{ marginBottom: "40px" }}>
+      <Skeleton height="24px" width="200px" style={{ marginBottom: "20px" }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="glass-card" style={{ padding: "24px", flex: 1, minWidth: "240px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+              <Skeleton circle height="48px" />
+              <Skeleton height="20px" width="40px" />
+            </div>
+            <Skeleton height="14px" width="100px" style={{ marginBottom: "8px" }} />
+            <Skeleton height="32px" width="60px" style={{ marginBottom: "8px" }} />
+            <Skeleton height="12px" width="80px" />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="responsive-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+      <div className="glass-card" style={{ padding: "24px", minHeight: "350px" }}>
+        <Skeleton height="24px" width="150px" style={{ marginBottom: "20px" }} />
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", height: "200px", paddingBottom: "20px" }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "4px", height: "100%" }}>
+              <Skeleton height={`${Math.random() * 60 + 40}%`} style={{ opacity: 0.5 }} />
+              <Skeleton height={`${Math.random() * 40 + 20}%`} style={{ opacity: 0.3 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="glass-card" style={{ padding: "24px" }}>
+        <Skeleton height="24px" width="180px" style={{ marginBottom: "20px" }} />
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "16px", marginBottom: "16px", borderBottom: i < 4 ? "1px solid var(--border)" : "none" }}>
+            <Skeleton circle height="40px" />
+            <div style={{ flex: 1 }}>
+              <Skeleton height="14px" width="120px" style={{ marginBottom: "6px" }} />
+              <Skeleton height="12px" width="80px" />
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <Skeleton height="14px" width="60px" style={{ marginBottom: "6px" }} />
+              <Skeleton height="10px" width="40px" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const StatCard = ({ title, value, change, icon, isPositive, trend }) => (
   <motion.div
@@ -146,18 +217,7 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div
-        style={{
-          height: "400px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Loader className="spinner" size={32} />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

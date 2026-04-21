@@ -38,20 +38,29 @@ const ProtectedRoute = ({
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          minHeight: "100vh",
-          backgroundColor: "var(--bg-dark)",
+          height: "60vh",
+          gap: "20px",
         }}
       >
-        <div
-          style={{
-            textAlign: "center",
-            color: "var(--text-light)",
-          }}
-        >
-          <div className="spinner" style={{ marginBottom: "16px" }}></div>
-          <p>Loading your profile...</p>
+        <div 
+          className="spinner" 
+          style={{ 
+            width: "40px", 
+            height: "40px", 
+            border: "3px solid var(--border)", 
+            borderTopColor: "var(--primary)" 
+          }} 
+        />
+        <div style={{ textAlign: "center" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "4px" }}>
+            Setting up your workspace...
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
+            Preparing your personalized dashboard experience.
+          </p>
         </div>
       </div>
     );
