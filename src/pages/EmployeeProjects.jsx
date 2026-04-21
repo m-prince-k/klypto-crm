@@ -8,12 +8,32 @@ import {
   Plus,
   X,
   CalendarDays,
+  ChevronDown,
+  Layout,
+  Briefcase,
+  Flag,
+  Calendar,
+  MoreHorizontal,
+  ArrowRight,
+  Pencil,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import apiClient from "../api/apiClient";
 
 const EmployeeProjects = () => {
   const { user } = useSelector((state) => state.auth);
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    backgroundColor: "var(--input-bg)",
+    border: "1px solid var(--border)",
+    color: "var(--text-main)",
+    fontSize: "13px",
+    transition: "all 0.2s",
+    outline: "none",
+  };
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
@@ -32,6 +52,8 @@ const EmployeeProjects = () => {
     dueDate: "",
     projectId: "",
   });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
 
   const fetchProjectsData = useCallback(async () => {
     setLoading(true);
@@ -143,21 +165,32 @@ const EmployeeProjects = () => {
       description: "",
       priority: "Medium",
       dueDate: "",
-      projectId: myProjects[0]?.id ? String(myProjects[0].id) : "",
+      projectId: "",
     });
+    setIsEditing(false);
+    setEditingTaskId(null);
   };
 
-  useEffect(() => {
-    if (!taskForm.projectId && myProjects.length > 0) {
-      setTaskForm((prev) => ({ ...prev, projectId: String(myProjects[0].id) }));
-    }
-  }, [myProjects, taskForm.projectId]);
+  // Removed auto-select first project useEffect to allow Independent Task as default
+
+  const handleEditTask = (task) => {
+    setTaskForm({
+      title: task.title,
+      description: task.description || "",
+      priority: task.priority || "Medium",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
+      projectId: task.projectId || "",
+    });
+    setIsEditing(true);
+    setEditingTaskId(task.id);
+    setShowCreateTaskModal(true);
+  };
 
   const handleCreateTask = async (event) => {
     event.preventDefault();
-    if (!taskForm.title.trim() || !taskForm.projectId) {
-      setError("Task title and project are required.");
-      toast.error("Task title and project are required");
+    if (!taskForm.title.trim()) {
+      setError("Task title is required.");
+      toast.error("Task title is required");
       return;
     }
 
@@ -166,18 +199,31 @@ const EmployeeProjects = () => {
     setSuccessMessage("");
 
     try {
-      await apiClient.post("/projects/tasks", {
-        title: taskForm.title.trim(),
-        description: taskForm.description.trim() || undefined,
-        priority: taskForm.priority,
-        dueDate: taskForm.dueDate
-          ? new Date(taskForm.dueDate).toISOString()
-          : undefined,
-        projectId: taskForm.projectId,
-      });
-
-      setSuccessMessage("Task created successfully.");
-      toast.success("Task created successfully");
+      if (isEditing) {
+        await apiClient.patch(`/projects/tasks/${editingTaskId}`, {
+          title: taskForm.title.trim(),
+          description: taskForm.description.trim() || undefined,
+          priority: taskForm.priority,
+          dueDate: taskForm.dueDate
+            ? new Date(taskForm.dueDate).toISOString()
+            : undefined,
+          projectId: taskForm.projectId || undefined,
+        });
+        setSuccessMessage("Task updated successfully.");
+        toast.success("Task updated successfully");
+      } else {
+        await apiClient.post("/projects/tasks", {
+          title: taskForm.title.trim(),
+          description: taskForm.description.trim() || undefined,
+          priority: taskForm.priority,
+          dueDate: taskForm.dueDate
+            ? new Date(taskForm.dueDate).toISOString()
+            : undefined,
+          projectId: taskForm.projectId || undefined,
+        });
+        setSuccessMessage("Task created successfully.");
+        toast.success("Task created successfully");
+      }
       setShowCreateTaskModal(false);
       resetTaskForm();
       await fetchProjectsData();
@@ -245,7 +291,7 @@ const EmployeeProjects = () => {
           <h1
             style={{ fontSize: "28px", fontWeight: "800", marginBottom: "6px" }}
           >
-            My Projects
+            My Projects/Tasks
           </h1>
           <button
             className="btn-primary"
@@ -518,46 +564,85 @@ const EmployeeProjects = () => {
                               Due {new Date(task.dueDate).toLocaleDateString()}
                             </div>
                           ) : null}
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr",
-                              gap: "6px",
+                          <div 
+                            style={{ 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "space-between",
+                              marginTop: "4px"
                             }}
                           >
-                            {columns
-                              .filter(
-                                (nextColumn) => nextColumn.id !== task.status,
-                              )
-                              .map((nextColumn) => (
-                                <button
-                                  key={nextColumn.id}
-                                  className={
-                                    nextColumn.id === "done"
-                                      ? "btn-primary"
-                                      : "btn-secondary"
-                                  }
-                                  onClick={() =>
-                                    handleTaskStatusUpdate(
-                                      task.id,
-                                      nextColumn.id,
-                                    )
-                                  }
-                                  disabled={actionLoading === `task-${task.id}`}
-                                  style={{
-                                    padding: "6px 10px",
-                                    fontSize: "11px",
-                                  }}
-                                >
-                                  {actionLoading === `task-${task.id}`
-                                    ? "Saving..."
-                                    : `Move to ${nextColumn.title}`}
-                                </button>
-                              ))}
+                            <div className="premium-badge-group">
+                              {task.projectId ? (
+                                <div className="premium-badge premium-badge-blue" style={{ fontSize: "10px" }}>
+                                  {task.project?.name || "Project"}
+                                </div>
+                              ) : (
+                                <div className="premium-badge" style={{ fontSize: "10px", background: "rgba(255,255,255,0.05)" }}>
+                                  Independent Task
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <button
+                                onClick={() => handleEditTask(task)}
+                                style={{
+                                  padding: "6px",
+                                  borderRadius: "6px",
+                                  backgroundColor: "rgba(255,255,255,0.05)",
+                                  color: "var(--text-muted)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  transition: "all 0.2s"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+                              >
+                                <Pencil size={12} strokeWidth={2.5} />
+                              </button>
+
+                              <div style={{ position: "relative" }}>
+                              <select
+                                value={task.status}
+                                onChange={(e) => handleTaskStatusUpdate(task.id, e.target.value)}
+                                disabled={actionLoading === `task-${task.id}`}
+                                className="glass-card"
+                                style={{
+                                  padding: "4px 28px 4px 8px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  backgroundColor: "rgba(14, 165, 233, 0.05)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: "6px",
+                                  color: "var(--text-main)",
+                                  cursor: "pointer",
+                                  appearance: "none",
+                                  WebkitAppearance: "none",
+                                }}
+                              >
+                                {columns.map(col => (
+                                  <option key={col.id} value={col.id}>{col.title}</option>
+                                ))}
+                              </select>
+                              <ChevronDown 
+                                size={12} 
+                                style={{ 
+                                  position: "absolute", 
+                                  right: "8px", 
+                                  top: "50%", 
+                                  transform: "translateY(-50%)",
+                                  pointerEvents: "none",
+                                  opacity: 0.6
+                                }} 
+                              />
+                            </div>
                           </div>
                         </div>
-                      ))
-                    )}
+                      </div>
+                    ))
+                  )}
                   </div>
                 );
               })}
@@ -565,199 +650,256 @@ const EmployeeProjects = () => {
           </div>
         </>
       )}
-
-      {showCreateTaskModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-        >
+      <AnimatePresence>
+        {showCreateTaskModal && (
           <div
-            className="glass-card"
-            style={{ width: "100%", maxWidth: "520px", padding: "24px" }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.75)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "14px",
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-card"
+              style={{ 
+                width: "100%", 
+                maxWidth: "600px", 
+                padding: "0",
+                overflow: "hidden",
+                border: "1px solid var(--border)",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
               }}
             >
-              <h3 style={{ fontSize: "20px", fontWeight: "800" }}>
-                Create Task
-              </h3>
-              <button
-                onClick={() => {
-                  setShowCreateTaskModal(false);
-                  resetTaskForm();
-                }}
-                style={{ color: "var(--text-muted)" }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleCreateTask}
-              style={{ display: "grid", gap: "12px" }}
-            >
-              <input
-                required
-                placeholder="Task title"
-                value={taskForm.title}
-                onChange={(event) =>
-                  setTaskForm((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--input-bg)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-main)",
-                }}
-              />
-
-              <textarea
-                rows={3}
-                placeholder="Description (optional)"
-                value={taskForm.description}
-                onChange={(event) =>
-                  setTaskForm((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--input-bg)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-main)",
-                  resize: "vertical",
-                }}
-              />
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "10px",
-                }}
-              >
-                <select
-                  value={taskForm.projectId}
-                  onChange={(event) =>
-                    setTaskForm((prev) => ({
-                      ...prev,
-                      projectId: event.target.value,
-                    }))
-                  }
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--input-bg)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  <option value="">Select project</option>
-                  {myProjects.map((project) => (
-                    <option key={project.id} value={String(project.id)}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={taskForm.priority}
-                  onChange={(event) =>
-                    setTaskForm((prev) => ({
-                      ...prev,
-                      priority: event.target.value,
-                    }))
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    backgroundColor: "var(--input-bg)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-main)",
-                  }}
-                >
-                  {["Low", "Medium", "High", "Critical"].map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <input
-                type="date"
-                value={taskForm.dueDate}
-                onChange={(event) =>
-                  setTaskForm((prev) => ({
-                    ...prev,
-                    dueDate: event.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--input-bg)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-main)",
-                }}
-              />
-
-              <div
-                style={{
+              {/* Modal Header */}
+              <div 
+                style={{ 
+                  padding: "24px", 
+                  borderBottom: "1px solid var(--border)",
                   display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "8px",
-                  marginTop: "4px",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "rgba(255,255,255,0.02)"
                 }}
               >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ padding: "8px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "var(--primary)" }}>
+                    <Plus size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: "18px", fontWeight: "800" }}>{isEditing ? "Edit Task" : "Create New Task"}</h3>
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>{isEditing ? "Update your assignment details" : "Fill in the details for your assignment"}</p>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  className="btn-secondary"
                   onClick={() => {
                     setShowCreateTaskModal(false);
                     resetTaskForm();
                   }}
+                  style={{ 
+                    padding: "8px",
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "var(--text-muted)",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={taskSubmitting}
-                >
-                  {taskSubmitting ? "Creating..." : "Create Task"}
+                  <X size={18} />
                 </button>
               </div>
-            </form>
+
+              {/* Modal Body */}
+              <form onSubmit={handleCreateTask} style={{ padding: "24px", display: "grid", gap: "20px" }}>
+                <div className="form-group-modern">
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Layout size={14} /> Task Title
+                  </label>
+                  <input
+                    required
+                    placeholder="Enter a descriptive title..."
+                    value={taskForm.title}
+                    onChange={(event) =>
+                      setTaskForm((prev) => ({
+                        ...prev,
+                        title: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ 
+                      ...inputStyle, 
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      padding: "12px 14px"
+                    }}
+                  />
+                </div>
+
+                <div className="form-group-modern">
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <MoreHorizontal size={14} /> Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Provide additional context or instructions..."
+                    value={taskForm.description}
+                    onChange={(event) =>
+                      setTaskForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ 
+                      ...inputStyle, 
+                      resize: "vertical", 
+                      borderRadius: "10px",
+                      minHeight: "80px"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="form-group-modern">
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Briefcase size={14} /> Associated Project
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <select
+                        value={taskForm.projectId}
+                        onChange={(event) =>
+                          setTaskForm((prev) => ({
+                            ...prev,
+                            projectId: event.target.value,
+                          }))
+                        }
+                        className="glass-card"
+                        style={{ 
+                          ...inputStyle, 
+                          borderRadius: "10px", 
+                          appearance: "none",
+                          paddingRight: "40px"
+                        }}
+                      >
+                        <option value="">Independent Task (No Project)</option>
+                        {myProjects.map((project) => (
+                          <option key={project.id} value={String(project.id)}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={16} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", opacity: 0.5 }} />
+                    </div>
+                  </div>
+
+                  <div className="form-group-modern">
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Flag size={14} /> Priority Level
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <select
+                        value={taskForm.priority}
+                        onChange={(event) =>
+                          setTaskForm((prev) => ({
+                            ...prev,
+                            priority: event.target.value,
+                          }))
+                        }
+                        className="glass-card"
+                        style={{ 
+                          ...inputStyle, 
+                          borderRadius: "10px", 
+                          appearance: "none",
+                          paddingRight: "40px"
+                        }}
+                      >
+                        {["Low", "Medium", "High", "Critical"].map((priority) => (
+                          <option key={priority} value={priority}>
+                            {priority}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={16} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", opacity: 0.5 }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group-modern">
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Calendar size={14} /> Completion Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={taskForm.dueDate}
+                    onChange={(event) =>
+                      setTaskForm((prev) => ({
+                        ...prev,
+                        dueDate: event.target.value,
+                      }))
+                    }
+                    className="glass-card"
+                    style={{ ...inputStyle, borderRadius: "10px" }}
+                  />
+                </div>
+
+                {/* Footer Actions */}
+                <div 
+                  style={{ 
+                    marginTop: "8px",
+                    paddingTop: "20px", 
+                    borderTop: "1px solid var(--border)", 
+                    display: "flex", 
+                    gap: "12px" 
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setShowCreateTaskModal(false);
+                      resetTaskForm();
+                    }}
+                    style={{ flex: 1, padding: "12px", borderRadius: "100px", fontWeight: "600" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={taskSubmitting}
+                    style={{ 
+                      flex: 2, 
+                      padding: "12px", 
+                      borderRadius: "100px", 
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    {taskSubmitting ? <Loader className="spinner" size={18} /> : (
+                      <>
+                        <ArrowRight size={18} />
+                        {isEditing ? "Update Assignment" : "Create Assignment"}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };
