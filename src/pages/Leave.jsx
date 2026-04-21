@@ -354,17 +354,57 @@ const Leave = () => {
     { id: "policies", label: "Policies", icon: <ShieldCheck size={18} /> },
     { id: "encashment", label: "Encashment", icon: <ReceiptText size={18} /> },
     { id: "carry", label: "Carry Forward", icon: <RotateCcw size={18} /> },
+    ...(hasLeaveEditRole
+      ? [{ id: "manage-types", label: "Manage Leave Types", icon: <Plus size={18} /> }]
+      : []),
   ];
 
-  const LEAVE_TYPES = [
+  const LEAVE_TYPES_DEFAULT = [
     "Annual",
     "Sick",
     "Casual",
     "Comp-Off",
-    "Maternity",
+    "Half-Day",
+    "Duty",
     "Paternity",
     "Unpaid",
   ];
+
+  // ── Custom leave types state (HR / Super Admin) ────────────────────────
+  const [leaveTypes, setLeaveTypes] = useState(() => {
+    try {
+      const stored = localStorage.getItem("klypto_leave_types");
+      return stored ? JSON.parse(stored) : LEAVE_TYPES_DEFAULT;
+    } catch {
+      return LEAVE_TYPES_DEFAULT;
+    }
+  });
+  const [newLeaveTypeName, setNewLeaveTypeName] = useState("");
+  const [leaveTypeError, setLeaveTypeError] = useState("");
+
+  const persistLeaveTypes = (types) => {
+    setLeaveTypes(types);
+    localStorage.setItem("klypto_leave_types", JSON.stringify(types));
+  };
+
+  const handleAddLeaveType = () => {
+    const trimmed = newLeaveTypeName.trim();
+    if (!trimmed) { setLeaveTypeError("Name cannot be empty."); return; }
+    if (leaveTypes.some((lt) => lt.toLowerCase() === trimmed.toLowerCase())) {
+      setLeaveTypeError("This leave type already exists."); return;
+    }
+    setLeaveTypeError("");
+    persistLeaveTypes([...leaveTypes, trimmed]);
+    setNewLeaveTypeName("");
+  };
+
+  const handleDeleteLeaveType = (lt) => {
+    if (!window.confirm(`Remove "${lt}" from leave types?`)) return;
+    persistLeaveTypes(leaveTypes.filter((x) => x !== lt));
+  };
+
+  // LEAVE_TYPES used in the apply-leave modal dynamically
+  const LEAVE_TYPES = leaveTypes;
 
   return (
     <div
@@ -1552,6 +1592,159 @@ const Leave = () => {
               </div>
             </TabContent>
           )}
+          {/* ─ Manage Leave Types (HR / Super Admin only) ─ */}
+          {activeTab === "manage-types" && hasLeaveEditRole && (
+            <TabContent key="manage-types" title="Manage Leave Types">
+              <div style={{ display: "grid", gap: "24px", maxWidth: "640px" }}>
+                {/* Add new type */}
+                <div className="glass-card" style={{ padding: "24px" }}>
+                  <h3
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "700",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Add New Leave Type
+                  </h3>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="text"
+                        value={newLeaveTypeName}
+                        onChange={(e) => {
+                          setNewLeaveTypeName(e.target.value);
+                          setLeaveTypeError("");
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddLeaveType()}
+                        placeholder="e.g. Bereavement Leave"
+                        style={{
+                          width: "100%",
+                          padding: "12px",
+                          borderRadius: "10px",
+                          backgroundColor: "var(--input-bg)",
+                          border: `1px solid ${leaveTypeError ? "#ef4444" : "var(--border)"}`,
+                          color: "var(--text-main)",
+                          fontSize: "14px",
+                        }}
+                      />
+                      {leaveTypeError && (
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#ef4444",
+                            marginTop: "6px",
+                          }}
+                        >
+                          {leaveTypeError}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleAddLeaveType}
+                      className="btn-primary"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "12px 20px",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Plus size={16} /> Add Type
+                    </button>
+                  </div>
+                </div>
+
+                {/* Existing types list */}
+                <div className="glass-card" style={{ padding: "24px" }}>
+                  <h3
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "700",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Configured Leave Types ({leaveTypes.length})
+                  </h3>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    {leaveTypes.map((lt) => (
+                      <div
+                        key={lt}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "12px 14px",
+                          borderRadius: "10px",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--column-bg)",
+                        }}
+                      >
+                        <span style={{ fontSize: "14px", fontWeight: "600" }}>
+                          {lt}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              padding: "3px 10px",
+                              borderRadius: "20px",
+                              backgroundColor: "rgba(16,185,129,0.12)",
+                              color: "#10b981",
+                            }}
+                          >
+                            Active
+                          </span>
+                          <button
+                            onClick={() => handleDeleteLeaveType(lt)}
+                            style={{
+                              color: "var(--text-muted)",
+                              opacity: 0.6,
+                              display: "flex",
+                              alignItems: "center",
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#ef4444";
+                              e.currentTarget.style.opacity = "1";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--text-muted)";
+                              e.currentTarget.style.opacity = "0.6";
+                            }}
+                            title={`Remove ${lt}`}
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: "10px",
+                    backgroundColor: "rgba(14,165,233,0.08)",
+                    border: "1px solid rgba(14,165,233,0.2)",
+                    fontSize: "13px",
+                    color: "var(--text-muted)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <strong style={{ color: "var(--primary)" }}>Note:</strong>{" "}
+                  Changes to leave types apply immediately to the Apply Leave
+                  form. Existing requests are not affected. Only HR and Super
+                  Admin can manage leave types.
+                </div>
+              </div>
+            </TabContent>
+          )}
+
         </AnimatePresence>
       </main>
 

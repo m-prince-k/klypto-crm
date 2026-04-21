@@ -391,7 +391,8 @@ const LeaveManagement = () => {
                   <option value="Annual">Annual Leave</option>
                   <option value="Sick">Sick Leave</option>
                   <option value="Casual">Casual Leave</option>
-                  <option value="Maternity">Maternity Leave</option>
+                  <option value="Half-Day">Half-Day Leave</option>
+                  <option value="Duty">Duty Leave</option>
                 </select>
               </div>
 

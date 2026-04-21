@@ -4,13 +4,11 @@ import {
   ShieldAlert,
   Clock,
   CheckCircle2,
-  UserX,
   MessageSquare,
   Flag,
   MoreVertical,
   Plus,
   ArrowUpRight,
-  ShieldCheck,
   Search,
   Send,
   Loader,
@@ -22,7 +20,6 @@ import apiClient from "../../api/apiClient";
 
 const GrievanceManagement = () => {
   const [view, setView] = useState("dashboard");
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [grievances, setGrievances] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +34,6 @@ const GrievanceManagement = () => {
     category: "General",
     description: "",
     severity: "Medium",
-    isAnonymous: false,
   });
 
   const fetchData = async () => {
@@ -63,13 +59,12 @@ const GrievanceManagement = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiClient.post("/grievances", { ...formData, isAnonymous });
+      await apiClient.post("/grievances", { ...formData });
       setFormData({
         subject: "",
         category: "General",
         description: "",
         severity: "Medium",
-        isAnonymous: false,
       });
       setView("dashboard");
       fetchData();
@@ -485,11 +480,7 @@ const GrievanceManagement = () => {
                           color: getSeverityColor(grv.severity),
                         }}
                       >
-                        {grv.isAnonymous ? (
-                          <UserX size={20} />
-                        ) : (
-                          <ShieldAlert size={20} />
-                        )}
+                        <ShieldAlert size={20} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <div
@@ -503,20 +494,6 @@ const GrievanceManagement = () => {
                           <span style={{ fontWeight: "700" }}>
                             {grv.subject}
                           </span>
-                          {grv.isAnonymous && (
-                            <span
-                              style={{
-                                fontSize: "10px",
-                                padding: "2px 6px",
-                                borderRadius: "4px",
-                                backgroundColor: "rgba(239, 68, 68, 0.1)",
-                                color: "#ef4444",
-                                fontWeight: "800",
-                              }}
-                            >
-                              ANONYMOUS
-                            </span>
-                          )}
                         </div>
                         <div
                           style={{
@@ -629,80 +606,6 @@ const GrievanceManagement = () => {
               onSubmit={handleSubmit}
               style={{ display: "flex", flexDirection: "column", gap: "24px" }}
             >
-              <div
-                style={{
-                  padding: "16px",
-                  borderRadius: "12px",
-                  backgroundColor: "var(--input-bg)",
-                  border: "1px solid var(--border)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
-                >
-                  <div
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor: isAnonymous
-                        ? "#ef4444"
-                        : "var(--primary)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "var(--text-main)",
-                    }}
-                  >
-                    {isAnonymous ? (
-                      <UserX size={20} />
-                    ) : (
-                      <ShieldCheck size={20} />
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: "600" }}>
-                      Anonymous Submission
-                    </div>
-                    <div
-                      style={{ fontSize: "12px", color: "var(--text-muted)" }}
-                    >
-                      Your identity will be hidden from the reviewer.
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAnonymous(!isAnonymous)}
-                  aria-label="Toggle anonymous submission"
-                  style={{
-                    width: "50px",
-                    height: "24px",
-                    borderRadius: "12px",
-                    backgroundColor: isAnonymous ? "#ef4444" : "var(--border)",
-                    position: "relative",
-                    transition: "all 0.3s",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: isAnonymous ? "28px" : "4px",
-                      top: "4px",
-                      width: "16px",
-                      height: "16px",
-                      backgroundColor: "#ffffff",
-                      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.25)",
-                      borderRadius: "50%",
-                      transition: "all 0.3s",
-                    }}
-                  ></div>
-                </button>
-              </div>
-
               <div>
                 <label
                   style={{
@@ -1063,9 +966,7 @@ const GrievanceManagement = () => {
                   Reported:{" "}
                   {new Date(selectedGrievance.createdAt).toLocaleString()}
                 </span>
-                <span>
-                  Anonymous: {selectedGrievance.isAnonymous ? "Yes" : "No"}
-                </span>
+
               </div>
             </motion.div>
           </motion.div>

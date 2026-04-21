@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { CalendarDays, Clock3, CheckCircle2, XCircle, Loader } from "lucide-react";
+import { CalendarDays, Clock3, CheckCircle2, XCircle } from "lucide-react";
 import apiClient from "../../api/apiClient";
 
 const Attendance = () => {
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null); // format: "employeeId_type"
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,32 +68,7 @@ const Attendance = () => {
     };
   });
 
-  const handleAction = async (employeeId, type) => {
-    const actionKey = `${employeeId}_${type}`;
-    setActionLoading(actionKey);
-    try {
-      const now = new Date().toISOString();
-      const payload = { employeeId };
 
-      if (type === "check-in") {
-        payload.status = "Present";
-        payload.checkIn = now;
-      } else if (type === "check-out") {
-        payload.checkOut = now;
-      }
-
-      await apiClient.post("/attendance", payload);
-
-      // Refresh just the attendance payload
-      const attRes = await apiClient.get("/attendance");
-      setAttendance(attRes.data);
-    } catch (err) {
-      console.error("Failed to commit attendance", err);
-      alert("Failed to save attendance.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const presentCount = rows.filter((r) => r.status === "Present").length;
   const leaveCount = rows.filter((r) => r.status === "Leave").length;
@@ -215,7 +189,7 @@ const Attendance = () => {
                 className="hrms-attendance-row"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
+                  gridTemplateColumns: "2fr 1fr 1fr 1fr",
                   gap: "12px",
                   alignItems: "center",
                   padding: "14px",
@@ -240,30 +214,6 @@ const Attendance = () => {
                   }}
                 >
                   {row.status}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "8px",
-                  }}
-                >
-                  <button
-                    onClick={() => handleAction(row.id, "check-in")}
-                    className="btn-primary"
-                    style={{ padding: "4px 8px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px", minWidth: "75px", justifyContent: "center" }}
-                    disabled={(row.hasRecord && row.checkIn !== "-") || actionLoading === `${row.id}_check-in`}
-                  >
-                    {actionLoading === `${row.id}_check-in` ? <Loader size={12} className="spinner" /> : "Check-in"}
-                  </button>
-                  <button
-                    onClick={() => handleAction(row.id, "check-out")}
-                    className="btn-primary"
-                    style={{ padding: "4px 8px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px", minWidth: "85px", justifyContent: "center" }}
-                    disabled={(!row.hasRecord || row.checkOut !== "-" || row.checkIn === "-") || actionLoading === `${row.id}_check-out`}
-                  >
-                    {actionLoading === `${row.id}_check-out` ? <Loader size={12} className="spinner" /> : "Check-out"}
-                  </button>
                 </div>
               </div>
             ))}
