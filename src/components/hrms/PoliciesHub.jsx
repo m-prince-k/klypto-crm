@@ -577,12 +577,12 @@ const PoliciesHub = () => {
                   top: "24px",
                   padding: "10px",
                   color: "var(--text-muted)",
-                  backgroundColor: "rgba(255,255,255,0.05)",
+                  backgroundColor: "var(--glass)",
                   borderRadius: "50%",
                   transition: "all 0.2s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--border)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--glass)")}
               >
                 <X size={20} />
               </button>
@@ -641,7 +641,7 @@ const PoliciesHub = () => {
               <div
                 className="policy-doc-container"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  backgroundColor: "var(--glass)",
                   borderRadius: "16px",
                   padding: "32px",
                   border: "1px solid var(--border)",
@@ -653,7 +653,7 @@ const PoliciesHub = () => {
                   style={{
                     fontSize: "16px",
                     lineHeight: "1.8",
-                    color: "rgba(255, 255, 255, 0.9)",
+                    color: "var(--text-main)",
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
                   }}
@@ -724,7 +724,7 @@ const styles = `
     color: var(--text-muted) !important;
   }
   .rich-text-editor-container .ql-picker-options {
-    background-color: var(--bg-dark) !important;
+    background-color: var(--bg-card) !important;
     border-color: var(--border) !important;
   }
   
@@ -765,6 +765,59 @@ const styles = `
     margin: 0 !important;
     padding: 0 !important;
     font-size: 13px !important;
+    color: var(--text-muted) !important;
+  }
+
+  /* Force theme colors on all policy content children with extreme priority */
+  .policy-full-content, 
+  .policy-full-content *, 
+  .ql-editor, 
+  .ql-editor *,
+  .ql-viewer,
+  .ql-viewer * {
+    color: var(--text-main) !important;
+  }
+
+  /* Specific overrides for Light Mode to be 100% sure */
+  [data-theme="light"] .ql-editor,
+  [data-theme="light"] .ql-editor *,
+  [data-theme="light"] .ql-viewer,
+  [data-theme="light"] .ql-viewer *,
+  [data-theme="light"] .policy-full-content,
+  [data-theme="light"] .policy-full-content * {
+    color: #0f172a !important;
+  }
+
+  /* Fix toolbar icons in light mode */
+  [data-theme="light"] .ql-snow .ql-stroke {
+    stroke: #64748b !important;
+  }
+  [data-theme="light"] .ql-snow .ql-fill {
+    fill: #64748b !important;
+  }
+  [data-theme="light"] .ql-snow .ql-picker {
+    color: #64748b !important;
+  }
+
+  [data-theme="light"] .policy-doc-container {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  [data-theme="dark"] .policy-doc-container {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Editor container background fix */
+  .rich-text-editor-container {
+    background: var(--bg-card) !important;
+  }
+  [data-theme="light"] .ql-container.ql-snow {
+    background: #ffffff !important;
+  }
+  [data-theme="dark"] .ql-container.ql-snow {
+    background: rgba(255, 255, 255, 0.03) !important;
   }
 `;
 

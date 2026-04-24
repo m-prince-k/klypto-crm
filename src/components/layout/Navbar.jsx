@@ -126,7 +126,7 @@ const Navbar = ({ onMenuClick }) => {
       >
         <Menu size={20} />
       </button>
-
+{/* 
       <div
         className="navbar-search"
         style={{
@@ -180,7 +180,7 @@ const Navbar = ({ onMenuClick }) => {
         >
           K
         </div>
-      </div>
+      </div> */}
 
       <div
         className="navbar-actions"

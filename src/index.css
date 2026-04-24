@@ -176,12 +176,44 @@ select option {
   opacity: 0.9;
 }
 
-.employee-portal input,
-.employee-portal textarea,
-.employee-portal select {
-  background-color: var(--input-bg) !important;
+input,
+textarea,
+select,
+.ql-editor,
+.ql-editor *,
+.policy-full-content,
+.policy-full-content * {
+  background-color: transparent !important;
   color: var(--text-main) !important;
-  border: 1px solid var(--border) !important;
+}
+
+.ql-editor {
+  background-color: var(--input-bg) !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--text-muted) !important;
+}
+
+.ql-toolbar {
+  background-color: var(--bg-dark) !important;
+  border-color: var(--border) !important;
+}
+
+.ql-container {
+  border-color: var(--border) !important;
+}
+
+.ql-snow .ql-stroke {
+  stroke: var(--text-muted) !important;
+}
+
+.ql-snow .ql-fill {
+  fill: var(--text-muted) !important;
+}
+
+.ql-snow .ql-picker {
+  color: var(--text-muted) !important;
 }
 
 .employee-portal input::placeholder,

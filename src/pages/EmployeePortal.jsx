@@ -21,6 +21,13 @@ import {
   Calendar,
   Layers,
   Award,
+  ReceiptText,
+  UserMinus,
+  Download,
+  Wallet,
+  Eye,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../api/apiClient";
@@ -106,6 +113,17 @@ const initialComplaintForm = {
   description: "",
   severity: "Medium",
 };
+const initialReimbursementForm = {
+  amount: "",
+  reason: "",
+  date: "",
+  attachmentUrl: "",
+};
+const initialResignationForm = {
+  proposedLastWorkingDay: "",
+  reason: "",
+  handoverPlan: "",
+};
 
 const toCurrency = (value) =>
   value === null || value === undefined
@@ -113,14 +131,16 @@ const toCurrency = (value) =>
     : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const getStatusStyle = (status) => {
-  if (status === "Approved" || status === "Resolved") {
-    return { backgroundColor: "var(--tag-bg)", color: "var(--text-main)" };
+  const s = status?.toLowerCase();
+  if (s === "approved" || s === "resolved" || s === "completed") {
+    return { backgroundColor: "rgba(34, 197, 94, 0.1)", color: "#22c55e" };
   }
-
-  if (status === "Rejected" || status === "Escalated") {
-    return { backgroundColor: "var(--tag-bg)", color: "var(--text-main)" };
+  if (s === "rejected" || s === "escalated" || s === "cancelled") {
+    return { backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#ef4444" };
   }
-
+  if (s === "pending" || s === "in review") {
+    return { backgroundColor: "rgba(234, 179, 8, 0.1)", color: "#eab308" };
+  }
   return { backgroundColor: "var(--tag-bg)", color: "var(--text-muted)" };
 };
 
@@ -153,6 +173,7 @@ const EmployeePortal = () => {
   const [complaints, setComplaints] = useState([]);
   const [policies, setPolicies] = useState([]);
   const [viewingPolicy, setViewingPolicy] = useState(null);
+  const [viewingResignation, setViewingResignation] = useState(false);
 
   const [leaveForm, setLeaveForm] = useState(initialLeaveForm);
   const [complaintForm, setComplaintForm] = useState(initialComplaintForm);
@@ -161,6 +182,28 @@ const EmployeePortal = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [leaveStatusFilter, setLeaveStatusFilter] = useState("All");
   const [complaintStatusFilter, setComplaintStatusFilter] = useState("All");
+
+  const [reimbursementForm, setReimbursementForm] = useState(initialReimbursementForm);
+  const [resignationForm, setResignationForm] = useState(initialResignationForm);
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [myReimbursements, setMyReimbursements] = useState([]);
+  const [myResignation, setMyResignation] = useState(null);
+
+  useEffect(() => {
+    if (!receiptFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    if (receiptFile.type.startsWith('image/')) {
+      const url = URL.createObjectURL(receiptFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [receiptFile]);
 
   const todayIsoDate = useMemo(() => {
     const now = new Date();
@@ -196,6 +239,8 @@ const EmployeePortal = () => {
         leaveRes,
         grievanceRes,
         policiesRes,
+        reimbursementRes,
+        resignationRes,
       ] = await Promise.all([
         apiClient.get("/employees"),
         apiClient.get(`/attendance?date=${todayIsoDate}`),
@@ -204,6 +249,8 @@ const EmployeePortal = () => {
         apiClient.get("/leaves"),
         apiClient.get("/grievances"),
         apiClient.get("/policies"),
+        apiClient.get("/finance/reimbursements"),
+        apiClient.get("/hr-resignations"),
       ]);
 
       const employeeRecord =
@@ -222,6 +269,12 @@ const EmployeePortal = () => {
       const myComplaints = grievanceRes.data.filter(
         (item) => item.employeeId === myEmployeeId,
       );
+      const myClaims = reimbursementRes.data.filter(
+        (item) => item.employeeId === myEmployeeId,
+      );
+      const myExit = resignationRes.data.find(
+        (item) => item.employeeId === myEmployeeId,
+      );
 
       setEmployee(employeeRecord);
       setTodayAttendance(attendanceRecord);
@@ -230,6 +283,8 @@ const EmployeePortal = () => {
       setLeaveRequests(myLeaves);
       setComplaints(myComplaints);
       setPolicies(policiesRes.data);
+      setMyReimbursements(myClaims);
+      setMyResignation(myExit);
     } catch (fetchError) {
       const message =
         fetchError.response?.data?.message ||
@@ -352,6 +407,94 @@ const EmployeePortal = () => {
       toast.error(
         Array.isArray(message) ? message.join(", ") : String(message),
       );
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleReimbursementSubmit = async (event) => {
+    event.preventDefault();
+    if (!employeeId) return;
+
+    if (!reimbursementForm.amount || !reimbursementForm.reason.trim()) {
+      setError("Amount and reason are required.");
+      toast.error("Amount and reason are required");
+      return;
+    }
+
+    setActionLoading("reimbursement");
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      let finalAttachmentUrl = reimbursementForm.attachmentUrl;
+
+      // Handle file upload if a file is selected
+      if (receiptFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", receiptFile);
+        const uploadRes = await apiClient.post("/upload", uploadFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        finalAttachmentUrl = uploadRes.data.url;
+      }
+
+      let formattedDate = undefined;
+      if (reimbursementForm.date) {
+        const d = new Date(reimbursementForm.date);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toISOString();
+        }
+      }
+
+      await apiClient.post("/finance/reimbursements", {
+        ...reimbursementForm,
+        amount: parseFloat(reimbursementForm.amount),
+        date: formattedDate,
+        attachmentUrl: finalAttachmentUrl,
+        employeeId,
+      });
+      setReimbursementForm(initialReimbursementForm);
+      setReceiptFile(null);
+      setSuccessMessage("Reimbursement request submitted.");
+      toast.success("Reimbursement request submitted");
+      await fetchEmployeeData();
+    } catch (err) {
+      const message = err.response?.data?.message || "Submission failed";
+      setError(message);
+      toast.error(Array.isArray(message) ? message.join(", ") : String(message));
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleResignationSubmit = async (event) => {
+    event.preventDefault();
+    if (!employeeId) return;
+
+    if (!resignationForm.proposedLastWorkingDay || !resignationForm.reason.trim()) {
+      setError("Last working day and reason are required.");
+      toast.error("Last working day and reason are required");
+      return;
+    }
+
+    setActionLoading("resignation");
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await apiClient.post("/hr-resignations", {
+        ...resignationForm,
+        employeeId,
+      });
+      setResignationForm(initialResignationForm);
+      setSuccessMessage("Resignation submitted successfully.");
+      toast.success("Resignation submitted successfully");
+      await fetchEmployeeData();
+    } catch (err) {
+      const message = err.response?.data?.message || "Resignation failed";
+      setError(message);
+      toast.error(Array.isArray(message) ? message.join(", ") : String(message));
     } finally {
       setActionLoading("");
     }
@@ -1121,13 +1264,325 @@ const EmployeePortal = () => {
                         dangerouslySetInnerHTML={{ __html: policy.content }}
                       />
                     </div>
-
-                    <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "6px", color: "var(--primary)", fontSize: "13px", fontWeight: "700" }}>
-                      Read Documentation <ArrowRight size={14} />
+                    
+                    <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "var(--primary)" }}>
+                      Read Policy Details <ChevronRight size={14} />
                     </div>
                   </motion.div>
                 ))
               )}
+            </div>
+          </section>
+
+          {/* New Section: Finance & Career */}
+          <section style={{ marginTop: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+              <ReceiptText size={22} color="var(--primary)" />
+              <h2 style={{ fontSize: "20px", fontWeight: "800" }}>Finance & Career Management</h2>
+            </div>
+            
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {/* Reimbursement Form */}
+              <div className="glass-card" style={{ padding: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                  <ReceiptText size={18} />
+                  <h3 style={{ fontWeight: "700" }}>Request Reimbursement</h3>
+                </div>
+
+                <form onSubmit={handleReimbursementSubmit} style={{ display: "grid", gap: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <div className="form-group-modern">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                        <Wallet size={14} color="var(--primary)" />
+                        Amount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder="0.00"
+                        value={reimbursementForm.amount}
+                        onChange={(e) => setReimbursementForm(prev => ({ ...prev, amount: e.target.value }))}
+                        className="glass-card"
+                        style={{ ...inputStyle, borderRadius: "10px", padding: '12px 16px' }}
+                      />
+                    </div>
+                    <div className="form-group-modern">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                        <Calendar size={14} color="var(--primary)" />
+                        Expense Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={reimbursementForm.date}
+                        onChange={(e) => setReimbursementForm(prev => ({ ...prev, date: e.target.value }))}
+                        className="glass-card"
+                        style={{ ...inputStyle, borderRadius: "10px", padding: '12px 16px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group-modern">
+                    <label style={{ fontSize: '13px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Reason / Description</label>
+                    <textarea
+                      required
+                      rows={2}
+                      placeholder="e.g., Client meeting travel, Office supplies..."
+                      value={reimbursementForm.reason}
+                      onChange={(e) => setReimbursementForm(prev => ({ ...prev, reason: e.target.value }))}
+                      className="glass-card"
+                      style={{ ...inputStyle, resize: "none", borderRadius: "10px", padding: '12px 16px' }}
+                    />
+                  </div>
+
+                  <div className="form-group-modern">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                      <Eye size={14} color="var(--primary)" />
+                      Bill / Receipt Attachment
+                    </label>
+                    <div 
+                      className="glass-card" 
+                      style={{ 
+                        position: 'relative',
+                        padding: '20px', 
+                        border: '2px dashed var(--border)',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        background: receiptFile ? 'rgba(14, 165, 233, 0.05)' : 'transparent'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                      onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => setReceiptFile(e.target.files[0])}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          opacity: 0,
+                          cursor: 'pointer',
+                          width: '100%',
+                          height: '100%'
+                        }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        {previewUrl ? (
+                          <div style={{ position: 'relative', width: '100%', maxWidth: '200px', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                            <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s' }} className="preview-overlay">
+                              <PlusCircle size={24} color="white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <Download size={24} color={receiptFile ? 'var(--primary)' : 'var(--text-muted)'} />
+                        )}
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: receiptFile ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                          {receiptFile ? receiptFile.name : "Click to upload bill image or PDF"}
+                        </span>
+                        {!receiptFile && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Max file size: 5MB</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    className="btn-primary" 
+                    disabled={actionLoading === "reimbursement"}
+                    style={{ padding: "16px", borderRadius: "12px", fontWeight: "800", fontSize: '15px', letterSpacing: '0.5px' }}
+                  >
+                    {actionLoading === "reimbursement" ? <Loader size={20} className="spinner" /> : "Submit Reimbursement Claim"}
+                  </button>
+                </form>
+
+                {/* My Reimbursements List */}
+                <div style={{ marginTop: "24px", maxHeight: "200px", overflowY: "auto", display: "grid", gap: "10px" }}>
+                  <h4 style={{ fontSize: "12px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>My Recent Claims</h4>
+                  {myReimbursements.length === 0 ? (
+                    <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>No claims submitted yet.</p>
+                  ) : (
+                    myReimbursements.map(claim => (
+                      <div key={claim.id} style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontWeight: "600", fontSize: "13px" }}>${claim.amount} - {claim.reason}</div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{new Date(claim.date).toLocaleDateString()}</div>
+                        </div>
+                        <span style={{ 
+                          padding: "2px 8px", 
+                          borderRadius: "10px", 
+                          fontSize: "10px", 
+                          fontWeight: "700",
+                          ...getStatusStyle(claim.status)
+                        }}>
+                          {claim.status}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Resignation Form */}
+              <div className="glass-card" style={{ padding: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                  <UserMinus size={18} />
+                  <h3 style={{ fontWeight: "700" }}>Career: Submit Resignation</h3>
+                </div>
+
+                {myResignation && myResignation.status?.toLowerCase() !== "rejected" ? (
+                  <div style={{ padding: "20px", borderRadius: "12px", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                      <h4 style={{ fontWeight: "700", color: "#ef4444" }}>Active Resignation</h4>
+                      <span style={{ 
+                        padding: "4px 10px", 
+                        borderRadius: "20px", 
+                        fontSize: "11px", 
+                        fontWeight: "800",
+                        ...getStatusStyle(myResignation.status)
+                      }}>
+                        {myResignation.status}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gap: "12px", fontSize: "14px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
+                        <span style={{ color: "var(--text-muted)" }}>Last Working Day:</span>
+                        <span style={{ fontWeight: "700" }}>{new Date(myResignation.proposedLastWorkingDay).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
+                        <span style={{ color: "var(--text-muted)" }}>Notice Period:</span>
+                        <span style={{ fontWeight: "600" }}>{myResignation.noticePeriod} Days</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
+                        <span style={{ color: "var(--text-muted)" }}>FNF Status:</span>
+                        <span style={{ fontWeight: "800", color: "var(--primary)" }}>{myResignation.fnfStatus}</span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => setViewingResignation(true)}
+                      style={{ 
+                        marginTop: "20px", 
+                        width: "100%", 
+                        padding: "12px", 
+                        borderRadius: "10px", 
+                        border: "1px solid var(--border)",
+                        background: "rgba(255,255,255,0.03)",
+                        color: "var(--text-main)",
+                        fontWeight: "700",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px"
+                      }}
+                    >
+                      <Eye size={16} /> View Resignation Details
+                    </button>
+
+                    <p style={{ marginTop: "16px", fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic", textAlign: 'center' }}>
+                      Official exit process initiated.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleResignationSubmit} style={{ display: "grid", gap: "20px" }}>
+                    <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444', marginBottom: '8px' }}>
+                        <AlertCircle size={18} />
+                        <span style={{ fontWeight: '800', fontSize: '14px' }}>Important Notice</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                        Resignations are subject to a standard <strong>30-day notice period</strong>. Your final last working day will be confirmed by HR.
+                      </p>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                      <div className="form-group-modern">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                          <Calendar size={14} color="#ef4444" />
+                          Proposed Last Working Day
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={resignationForm.proposedLastWorkingDay}
+                          onChange={(e) => setResignationForm(prev => ({ ...prev, proposedLastWorkingDay: e.target.value }))}
+                          className="glass-card"
+                          style={{ ...inputStyle, borderRadius: "10px", padding: '12px 16px' }}
+                        />
+                      </div>
+                      <div className="form-group-modern">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                          <Clock size={14} color="#ef4444" />
+                          Notice Period (Days)
+                        </label>
+                        <input
+                          type="number"
+                          readOnly
+                          value={30}
+                          className="glass-card"
+                          style={{ ...inputStyle, borderRadius: "10px", padding: '12px 16px', opacity: 0.7, background: 'rgba(255,255,255,0.02)' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-modern">
+                      <label style={{ fontSize: '13px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Reason for Resignation</label>
+                      <textarea
+                        required
+                        rows={3}
+                        placeholder="Please provide a detailed reason for your departure..."
+                        value={resignationForm.reason}
+                        onChange={(e) => setResignationForm(prev => ({ ...prev, reason: e.target.value }))}
+                        className="glass-card"
+                        style={{ ...inputStyle, resize: "none", borderRadius: "10px", padding: '12px 16px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-modern">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>
+                        <Layers size={14} color="#ef4444" />
+                        Handover Plan & Tasks
+                      </label>
+                      <textarea
+                        rows={3}
+                        placeholder="Outline your plan to transition your responsibilities..."
+                        value={resignationForm.handoverPlan}
+                        onChange={(e) => setResignationForm(prev => ({ ...prev, handoverPlan: e.target.value }))}
+                        className="glass-card"
+                        style={{ ...inputStyle, resize: "none", borderRadius: "10px", padding: '12px 16px' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                       <input 
+                        type="checkbox" 
+                        id="assetsCheck"
+                        checked={resignationForm.companyAssetsHandover}
+                        onChange={(e) => setResignationForm(prev => ({ ...prev, companyAssetsHandover: e.target.checked }))}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                       />
+                       <label htmlFor="assetsCheck" style={{ fontSize: '13px', cursor: 'pointer' }}>I have initiated the handover of all company assets (Laptop, ID, etc.)</label>
+                    </div>
+
+                    <button 
+                      className="btn-primary" 
+                      disabled={actionLoading === "resignation"}
+                      style={{ padding: "18px", borderRadius: "12px", fontWeight: "800", background: "linear-gradient(to right, #ef4444, #f43f5e)", fontSize: '16px', marginTop: '10px' }}
+                    >
+                      {actionLoading === "resignation" ? <Loader size={22} className="spinner" /> : "Submit Formal Resignation"}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           </section>
         </>
@@ -1254,7 +1709,113 @@ const EmployeePortal = () => {
           </div>
         </div>
       )}
+      {/* Resignation View Modal */}
+      {viewingResignation && myResignation && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: "100%",
+              maxWidth: "600px",
+              padding: "40px",
+              position: "relative",
+              border: "1px solid var(--border)",
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}
+          >
+            <button
+              onClick={() => setViewingResignation(false)}
+              style={{
+                position: "absolute",
+                right: "24px",
+                top: "24px",
+                padding: "8px",
+                color: "var(--text-muted)",
+                background: "rgba(255,255,255,0.05)",
+                borderRadius: "50%",
+              }}
+            >
+              <X size={20} />
+            </button>
 
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <div style={{ 
+                width: '64px', 
+                height: '64px', 
+                borderRadius: '20px', 
+                background: 'rgba(239, 68, 68, 0.1)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                margin: '0 auto 16px',
+                color: '#ef4444'
+              }}>
+                <UserMinus size={32} />
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>Resignation Details</h2>
+              <span style={{ 
+                padding: "4px 12px", 
+                borderRadius: "20px", 
+                fontSize: "12px", 
+                fontWeight: "800",
+                ...getStatusStyle(myResignation.status)
+              }}>
+                {myResignation.status}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Reason for Resignation</label>
+                <p style={{ fontSize: '14px', lineHeight: '1.6' }}>{myResignation.reason}</p>
+              </div>
+
+              <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)' }}>
+                <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Handover Plan</label>
+                <p style={{ fontSize: '14px', lineHeight: '1.6' }}>{myResignation.handoverPlan || 'No handover plan provided.'}</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Submission Date</label>
+                  <p style={{ fontWeight: '600' }}>{new Date(myResignation.submissionDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Proposed LWD</label>
+                  <p style={{ fontWeight: '600' }}>{new Date(myResignation.proposedLastWorkingDay).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
+                <CheckCircle size={16} color="#22c55e" />
+                <span style={{ fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>
+                  {myResignation.companyAssetsHandover ? "Assets Handover Initiated" : "Assets Handover Pending"}
+                </span>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setViewingResignation(false)}
+              className="btn-primary"
+              style={{ width: '100%', marginTop: '32px', padding: '16px', borderRadius: '12px', fontWeight: '800' }}
+            >
+              Close Details
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

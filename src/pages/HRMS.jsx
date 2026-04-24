@@ -11,6 +11,8 @@ import {
   Plus,
   ArrowLeft,
   FileText,
+  ReceiptText,
+  UserMinus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +23,8 @@ import LeaveManagement from "../components/hrms/LeaveManagement";
 import PayrollStructure from "../components/hrms/PayrollStructure";
 import PerformanceReviews from "../components/hrms/PerformanceReviews";
 import PoliciesHub from "../components/hrms/PoliciesHub";
+import ReimbursementList from "../components/hrms/ReimbursementList";
+import ResignationList from "../components/hrms/ResignationList";
 
 const TabContent = ({ title, children, showAdd = true }) => (
   <motion.div
@@ -68,6 +72,8 @@ const HR = ({ initialTab = "overview" }) => {
     { id: "payroll", label: "Payroll", icon: <Wallet2 size={18} /> },
     { id: "performance", label: "Performance", icon: <Award size={18} /> },
     { id: "policies", label: "Policies", icon: <FileText size={18} /> },
+    { id: "reimbursements", label: "Reimbursements", icon: <ReceiptText size={18} /> },
+    { id: "resignations", label: "Resignations", icon: <UserMinus size={18} /> },
   ];
 
   useEffect(() => {
@@ -269,6 +275,16 @@ const HR = ({ initialTab = "overview" }) => {
           {activeTab === "policies" && (
             <TabContent key="policies" title="Office Policies" showAdd={false}>
               <PoliciesHub />
+            </TabContent>
+          )}
+          {activeTab === "reimbursements" && (
+            <TabContent key="reimbursements" title="Reimbursement Claims" showAdd={false}>
+              <ReimbursementList />
+            </TabContent>
+          )}
+          {activeTab === "resignations" && (
+            <TabContent key="resignations" title="Resignation Management" showAdd={false}>
+              <ResignationList />
             </TabContent>
           )}
         </AnimatePresence>
