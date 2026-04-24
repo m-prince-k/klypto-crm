@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { CalendarDays, Clock3, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarDays, Clock3, CheckCircle2, XCircle, Loader, FileText } from "lucide-react";
 import apiClient from "../../api/apiClient";
+import AttendanceMonthlyModal from "./AttendanceMonthlyModal";
 
 const Attendance = () => {
   const [employees, setEmployees] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Daily Filter State
+  const dateObj = new Date();
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const [selectedDate, setSelectedDate] = useState(`${year}-${month}-${day}`);
+
+  // Modal State
+  const [modalEmployee, setModalEmployee] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [empRes, attRes] = await Promise.all([
           apiClient.get("/employees"),
-          apiClient.get("/attendance"),
+          apiClient.get(`/attendance?date=${selectedDate}`),
         ]);
         setEmployees(empRes.data);
         setAttendance(attRes.data);
@@ -22,18 +33,29 @@ const Attendance = () => {
         setLoading(false);
       }
     };
+    
+    // Fetch immediately on mount
     fetchData();
-  }, []);
+
+    // Auto-refresh the dashboard every 15 seconds to catch new biometric punches
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 15000);
+
+    return () => clearInterval(intervalId);
+  }, [selectedDate]);
 
   const activeEmployees = employees.filter(
     (e) => e.status === "Active" || e.status === "Onboarding"
   );
 
   const rows = activeEmployees.map((emp) => {
+    // Backend API already filtered for today's date, just find the matching record
     const record = attendance.find((a) => a.employeeId === emp.id);
 
     let checkIn = "-";
     let checkOut = "-";
+    let workDuration = "00:00";
     let status = "Absent";
     let statusColor = "#ef4444";
 
@@ -52,6 +74,13 @@ const Attendance = () => {
         });
       }
 
+      if (record.checkIn && record.checkOut) {
+        const diffMs = new Date(record.checkOut) - new Date(record.checkIn);
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        workDuration = `${diffHrs}:${diffMins.toString().padStart(2, "0")}`;
+      }
+
       if (status === "Present") statusColor = "#10b981";
       else if (status === "Leave") statusColor = "#f59e0b";
       else if (status === "Late") statusColor = "#0ea5e9";
@@ -62,6 +91,7 @@ const Attendance = () => {
       name: emp.name,
       checkIn,
       checkOut,
+      workDuration,
       status,
       statusColor,
       hasRecord: !!record,
@@ -172,11 +202,19 @@ const Attendance = () => {
       </div>
 
       <div className="glass-card" style={{ padding: "24px" }}>
-        <h3
-          style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px" }}
-        >
-          Daily Attendance Log
-        </h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "700" }}>Daily Attendance Log</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CalendarDays size={18} color="var(--text-muted)" />
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="hrms-input"
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-body)', color: 'var(--text)', outline: 'none', cursor: 'pointer' }}
+            />
+          </div>
+        </div>
         {rows.length === 0 ? (
           <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>
             No active employees available to track.
@@ -189,7 +227,7 @@ const Attendance = () => {
                 className="hrms-attendance-row"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                  gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr 0.5fr",
                   gap: "12px",
                   alignItems: "center",
                   padding: "14px",
@@ -199,12 +237,20 @@ const Attendance = () => {
                   fontSize: "13px",
                 }}
               >
-                <div style={{ fontWeight: "600" }}>{row.name}</div>
-                <div style={{ color: "var(--text-muted)" }}>
-                  In: {row.checkIn}
+                <div style={{ fontWeight: "600", display: "flex", flexDirection: "column" }}>
+                  <span>{row.name}</span>
                 </div>
                 <div style={{ color: "var(--text-muted)" }}>
-                  Out: {row.checkOut}
+                  <span style={{ fontSize: "11px", display: "block", marginBottom: "2px" }}>In Time</span>
+                  <span style={{ fontWeight: "500", color: row.checkIn !== "-" ? "var(--text)" : "inherit" }}>{row.checkIn}</span>
+                </div>
+                <div style={{ color: "var(--text-muted)" }}>
+                  <span style={{ fontSize: "11px", display: "block", marginBottom: "2px" }}>Out Time</span>
+                  <span style={{ fontWeight: "500", color: row.checkOut !== "-" ? "var(--text)" : "inherit" }}>{row.checkOut}</span>
+                </div>
+                <div style={{ color: "var(--text-muted)" }}>
+                  <span style={{ fontSize: "11px", display: "block", marginBottom: "2px" }}>Work Dur.</span>
+                  <span style={{ fontWeight: "500" }}>{row.workDuration}</span>
                 </div>
                 <div
                   style={{
@@ -215,11 +261,28 @@ const Attendance = () => {
                 >
                   {row.status}
                 </div>
+                <div style={{ textAlign: "right" }}>
+                  <button 
+                    onClick={() => setModalEmployee({ id: row.id, name: row.name })}
+                    title="View Monthly Log"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <FileText size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {modalEmployee && (
+        <AttendanceMonthlyModal 
+          employeeId={modalEmployee.id} 
+          employeeName={modalEmployee.name} 
+          onClose={() => setModalEmployee(null)} 
+        />
+      )}
     </div>
   );
 };
